@@ -1,0 +1,81 @@
+{} C {..} {\empty}
+
+
+{} C1 {..}, {if P then E1 else \empty }
+{} Throw {...}, {if Q then E2 else \empty }
+
+
+{} C1 >>  Throw, {if P then E1 else if Q then E2 else \empty }
+
+if P then E1 else \empty  \subset       if P then E1 else if Q then E2 else \empty
+if Q then E2 else \empty  \not \subset  if P then E1 else if Q then E2 else \empty
+
+
+
+
+
+
+
+send : Transition Specifiction (TS)
+
+Wrong implementation:
+transfer (address a, int m) = send a 0
+
+{} transfer {X}
+
+a.fallback is certain procedure \subset TS
+
+{(a.fallback : state transition A -> B) * A /\ a.fallback \subset TS } send a { B }
+{balance = M} send a 10 {X }
+{(a.fallback : state transition (A, balance = M-10) -> (B, balance = N')) * (A, balance = M)  /\ a.fallback \subset TS } send a 10 { B, balance = N' }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{P} C1 {Q} {A1}
+{Q} C2 {R} {A2}
+-------------------
+{P} C1 {R} {A1 * A2}
+
+A ::= NoErr | Err (type-excep, state)
+NoErr * x = x
+Err y * _ = Err y
+
+type-excep ::= Break | Return | ...
+
+{P} C {Q} {A} := if 
+
+{P} C1 {Q} {if cond then excep else NoErr}
+{P} C {Q} {NoErr}
+
+(if cond1 then excep else NoErr) * (if cond2 then excep else NoErr)
+  = if cond1 then excep else NoErr
+
+
+
+
+
+
+
+
+
+
+
+
