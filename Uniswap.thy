@@ -1,5 +1,7 @@
 theory Uniswap
-  imports PhiSem_Machine_Integer PhiSem_CF_Basic PhiSem_Variable HOL.Transcendental
+  imports Phi_Semantics.PhiSem_Machine_Integer
+          Phi_Semantics.PhiSem_CF_Basic
+          Phi_Semantics.PhiSem_Variable HOL.Transcendental
 begin
 
 consts Tick  :: \<open>(VAL, int) \<phi>\<close>
@@ -86,10 +88,10 @@ qed
 
 debt_axiomatization getSqrtRatioAtTick :: \<open>(VAL,VAL) proc'\<close>
   where getSqrtRatioAtTick_\<phi>app:
-            \<open>\<^bold>p\<^bold>r\<^bold>o\<^bold>c getSqrtRatioAtTick v \<lbrace> t \<Ztypecolon> \<^bold>v\<^bold>a\<^bold>l[v] Tick \<longmapsto> price_of t \<Ztypecolon> \<^bold>v\<^bold>a\<^bold>l Price \<rbrace>\<close>
+            \<open>\<p>\<r>\<o>\<c> getSqrtRatioAtTick v \<lbrace> t \<Ztypecolon> \<v>\<a>\<l>[v] Tick \<longmapsto> price_of t \<Ztypecolon> \<v>\<a>\<l> Price \<rbrace>\<close>
     and getTickAtSqrtRatio_\<phi>app:
-            \<open>\<^bold>p\<^bold>r\<^bold>e\<^bold>m\<^bold>i\<^bold>s\<^bold>e 0 < p
-         \<Longrightarrow> \<^bold>p\<^bold>r\<^bold>o\<^bold>c getTickAtSqrtRatio v \<lbrace> p \<Ztypecolon> \<^bold>v\<^bold>a\<^bold>l[v] Price \<longmapsto> tick_of_price p \<Ztypecolon> \<^bold>v\<^bold>a\<^bold>l Tick \<rbrace>\<close>
+            \<open>\<p>\<r>\<e>\<m>\<i>\<s>\<e> 0 < p
+         \<Longrightarrow> \<p>\<r>\<o>\<c> getTickAtSqrtRatio v \<lbrace> p \<Ztypecolon> \<v>\<a>\<l>[v] Price \<longmapsto> tick_of_price p \<Ztypecolon> \<v>\<a>\<l> Tick \<rbrace>\<close>
 
 record tick_info =
   liquidityGross :: nat
@@ -102,16 +104,31 @@ record tick_info =
   initialized :: bool
 
 definition \<open>growth_Inv f f' delta current =
-  (\<forall>i. f i = (if i \<le> current then (sum f' {j. j \<le> i}) + delta i else (sum f' {j. i < j}) - delta i))\<close>
+  (\<forall>(i::int). f i = (if i \<le> current then (sum f' {j. j \<le> i}) + delta i
+                             else (sum f' {j. i < j}) - delta i))\<close>
   
 
 term sum
 
 
-consts TickInfo'  :: \<open>(VAL, tick_info) \<phi>\<close>
-       TickInfos :: \<open>(assn, int \<Rightarrow> tick_info) \<phi>\<close>
+debt_axiomatization TickInfos :: \<open>(assn, int \<Rightarrow> tick_info nonsepable option) \<phi>\<close>
+  where TickInfos_mult: \<open>(f1 \<Ztypecolon> TickInfos) * (f2 \<Ztypecolon> TickInfos) = (f1 * f2 \<Ztypecolon> TickInfos)\<close>
+          \<comment> \<open>Separation of Abstraction ?! cool! \<close>
 
-definition \<open>TickInfo = (\<lambda>info. into \<Ztypecolon> TickInfo' \<^bold>s\<^bold>u\<^bold>b\<^bold>j )\<close>
+thm TickInfos_mult
+
+definition TickInfo
+
+
+debt_axiomatization get_TickInfo :: \<open>(VAL,VAL) proc'\<close>
+  where getSqrtRatioAtTick_\<phi>app:
+            \<open>\<p>\<r>\<o>\<c> getSqrtRatioAtTick v \<lbrace> t \<Ztypecolon> \<v>\<a>\<l>[v] Tick \<longmapsto> price_of t \<Ztypecolon> \<v>\<a>\<l> Price \<rbrace>\<close>
+    and getTickAtSqrtRatio_\<phi>app:
+            \<open>\<p>\<r>\<e>\<m>\<i>\<s>\<e> 0 < p
+         \<Longrightarrow> \<p>\<r>\<o>\<c> getTickAtSqrtRatio v \<lbrace> p \<Ztypecolon> \<v>\<a>\<l>[v] Price \<longmapsto> tick_of_price p \<Ztypecolon> \<v>\<a>\<l> Tick \<rbrace>\<close>
+
+
+definition \<open>Ticks = (\<lambda>info. into \<Ztypecolon> TickInfo' \<s>\<u>\<b>\<j>  )\<close>
 
 
 end
