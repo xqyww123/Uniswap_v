@@ -1,7 +1,5 @@
 theory Uniswap_Virtual_Resource
-  imports Phi_Semantics.PhiSem_Int_ArbiPrec HOL.Real
-          Phi_Semantics.PhiSem_Real_Abst
-          Phi_Semantics.PhiSem_CF_Routine
+  imports UniSWP_Common
 begin
 
 no_notation inter (infixl "Int" 70)
@@ -11,77 +9,9 @@ no_notation inter (infixl "Int" 70)
 
 section \<open>Semantics\<close>
 
-subsection \<open>Models\<close>
-
-subsubsection \<open>Virtual Resources\<close>
-
-(*
-record growth =
-  fee0 :: real
-  fee1 :: real
-  tickCumulative :: int
-  secondsPerLiquidity :: real
-  secondsOutside :: int *)
-
-thm plus_prod_def
-value \<open>(2::nat, 3::int) + (0, 1)\<close>
-
-type_synonym growth = \<open>real \<times> real \<times> int \<times> real \<times> int\<close>
+subsection \<open>Models of Tick\<close>
 
 (*We do this ugly job because prod is configured with all algebraic properties!, like ring*)
-
-setup \<open>Sign.mandatory_path "growth"\<close>
-
-definition \<open>fee0 (x::growth) = (case x of (a,b,c,d,e) \<Rightarrow> a)\<close>
-definition \<open>map_fee0 f (x::growth) = (case x of (a,b,c,d,e) \<Rightarrow> ((f a,b,c,d,e) :: growth))\<close>
-lemma [simp]: \<open>growth.fee0 (a,b,c,d,e) = a\<close> unfolding growth.fee0_def by simp
-lemma [simp]: \<open>growth.map_fee0 f (a,b,c,d,e) = (f a,b,c,d,e)\<close> unfolding growth.map_fee0_def by simp
-
-definition \<open>fee1 (x::growth) = (case x of (a,b,c,d,e) \<Rightarrow> b)\<close>
-definition \<open>map_fee1 f (x::growth) = (case x of (a,b,c,d,e) \<Rightarrow> ((a,f b,c,d,e) :: growth))\<close>
-lemma [simp]: \<open>growth.fee1 (a,b,c,d,e) = b\<close> unfolding growth.fee1_def by simp
-lemma [simp]: \<open>growth.map_fee1 f (a,b,c,d,e) = (a,f b,c,d,e)\<close> unfolding growth.map_fee1_def by simp
-
-definition \<open>tickCumulative (x::growth) = (case x of (a,b,c,d,e) \<Rightarrow> c)\<close>
-definition \<open>map_tickCumulative f (x::growth) = (case x of (a,b,c,d,e) \<Rightarrow> ((a,b,f c,d,e) :: growth))\<close>
-lemma [simp]: \<open>growth.tickCumulative (a,b,c,d,e) = c\<close> unfolding growth.tickCumulative_def by simp
-lemma [simp]: \<open>growth.map_tickCumulative f (a,b,c,d,e) = (a,b,f c,d,e)\<close> unfolding growth.map_tickCumulative_def by simp
-
-definition \<open>secondsPerLiquidity (x::growth) = (case x of (a,b,c,d,e) \<Rightarrow> d)\<close>
-definition \<open>map_secondsPerLiquidity f (x::growth) = (case x of (a,b,c,d,e) \<Rightarrow> ((a,b,c,f d,e) :: growth))\<close>
-lemma [simp]: \<open>growth.secondsPerLiquidity (a,b,c,d,e) = d\<close> unfolding growth.secondsPerLiquidity_def by simp
-lemma [simp]: \<open>growth.map_secondsPerLiquidity f (a,b,c,d,e) = (a,b,c,f d,e)\<close> unfolding growth.map_secondsPerLiquidity_def by simp
-
-definition \<open>seconds (x::growth) = (case x of (a,b,c,d,e) \<Rightarrow> e)\<close>
-definition \<open>map_seconds f (x::growth) = (case x of (a,b,c,d,e) \<Rightarrow> ((a,b,c,d,f e) :: growth))\<close>
-lemma [simp]: \<open>growth.seconds (a,b,c,d,e) = e\<close> unfolding growth.seconds_def by simp
-lemma [simp]: \<open>growth.map_seconds f (a,b,c,d,e) = (a,b,c,d,f e)\<close> unfolding growth.map_seconds_def by simp
-
-setup \<open>Sign.parent_path\<close>
-
-lemma fee0_plus_homo[simp]:
-  \<open>growth.fee0 (a + b) = growth.fee0 a + growth.fee0 b\<close>
-  by (cases a; cases b; simp)
-
-lemma fee0_sub_homo[simp]:
-  \<open>growth.fee0 (a - b) = growth.fee0 a - growth.fee0 b\<close>
-  by (cases a; cases b; simp)
-
-lemma fee0_sum:
-  \<open>growth.fee0 (sum f S) = sum (growth.fee0 o f) S\<close>
-  by (metis add.right_neutral add_diff_cancel_left' fee0_plus_homo sum_comp_morphism)
-
-lemma fee1_plus_homo[simp]:
-  \<open>growth.fee1 (a + b) = growth.fee1 a + growth.fee1 b\<close>
-  by (cases a; cases b; simp)
-
-lemma fee1_sub_homo[simp]:
-  \<open>growth.fee1 (a - b) = growth.fee1 a - growth.fee1 b\<close>
-  by (cases a; cases b; simp)
-
-lemma fee1_sum:
-  \<open>growth.fee1 (sum f S) = sum (growth.fee1 o f) S\<close>
-  by (metis add.right_neutral add_diff_cancel_left' fee1_plus_homo sum_comp_morphism)
 
 
 datatype tick_info = tick_info
@@ -118,10 +48,12 @@ instance ..
 end
 
 
-
-type_synonym tick = int
 type_synonym ticks = \<open>tick \<Rightarrow> tick_info\<close>
 type_synonym ticks_resource = \<open>ticks nosep option\<close>
+
+
+
+
 
 resource_space \<phi>uniswap_res = \<phi>empty_res +
   R_ticks :: ticks_resource
@@ -160,59 +92,9 @@ interpretation FIC_ticks: identity_fiction \<open>UNIV\<close> R_ticks FIC_ticks
 
 section \<open>\<phi>-Types - Part I - Raw\<close>
 
-subsection \<open>Tick\<close>
-
-definition \<open>MIN_TICK = (-887272::int)\<close>
-definition \<open>MAX_TICK = ( 887272::int)\<close>
-
-lemma MIN_TICK_LT_MAX_TICK[simp]:
-  \<open>MIN_TICK < MAX_TICK\<close>
-  unfolding MIN_TICK_def MAX_TICK_def by simp
-
-lemma MM_TICK_LT_0[simp]:
-  \<open>MIN_TICK < 0\<close> \<open>0 < MAX_TICK\<close>
-  unfolding MIN_TICK_def MAX_TICK_def by simp_all
-
-lemma MM_TICK_LE_0[simp]:
-  \<open>MIN_TICK \<le> 0\<close> \<open>0 \<le> MAX_TICK\<close>
-  unfolding MIN_TICK_def MAX_TICK_def by simp_all
-
-definition Tick :: \<open>(VAL, tick) \<phi>\<close> where [\<phi>defs]: \<open>Tick i = (i \<Ztypecolon> \<int> \<s>\<u>\<b>\<j> i \<in> {MIN_TICK..MAX_TICK})\<close>
-
-
-
-lemma [\<phi>reason 1200]:
-  \<open> \<t>\<h>\<r>\<e>\<s>\<h>\<o>\<l>\<d> 1
-\<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> i = j \<and> j \<in> {MIN_TICK..MAX_TICK}
-\<Longrightarrow> i \<Ztypecolon> \<int> \<i>\<m>\<p>\<l>\<i>\<e>\<s> j \<Ztypecolon> Tick\<close>
-  \<medium_left_bracket> construct\<phi> \<open>i \<Ztypecolon> Tick\<close> \<medium_right_bracket>. .
-
-lemma [\<phi>reason 1200]:
-  \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> i \<in> {MIN_TICK..MAX_TICK}
-\<Longrightarrow> i \<Ztypecolon> \<int> \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> Tick @action to Tick\<close> \<medium_left_bracket> \<medium_right_bracket>. .
-
-lemma [\<phi>reason 1200, \<phi>inhabitance_rule]:
-  \<open> \<t>\<h>\<r>\<e>\<s>\<h>\<o>\<l>\<d> 1
-\<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> i = j
-\<Longrightarrow> i \<Ztypecolon> Tick \<i>\<m>\<p>\<l>\<i>\<e>\<s> j \<Ztypecolon> \<int> \<a>\<n>\<d> i \<in> {MIN_TICK..MAX_TICK}\<close>
-  \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>. .
-
-lemma [\<phi>reason 1200]: \<open>i \<Ztypecolon> Tick \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> \<int> \<a>\<n>\<d> i \<in> {MIN_TICK..MAX_TICK} @action to \<int>\<close> \<medium_left_bracket> \<medium_right_bracket>. .
-
-lemma [\<phi>reason 1000]: "\<phi>Equal Tick (\<lambda>x y. True) (=)" \<medium_left_bracket> to \<int> \<medium_right_bracket>. .
-
-lemma [\<phi>reason 1000]: \<open>\<phi>SemType (x \<Ztypecolon> Tick) aint\<close> \<medium_left_bracket> to \<int> \<medium_right_bracket>. .
-
-lemma [\<phi>reason 1000]: "\<phi>Zero aint Tick 0" \<medium_left_bracket> \<open>0 \<Ztypecolon> \<int>\<close> \<medium_right_bracket>. .
-
-
-
-
 
 subsection \<open>Tick Info Data\<close>
 
-type_synonym liquidity = \<open>tick \<Rightarrow> int\<close>
-type_synonym growths = \<open>tick \<Rightarrow> growth\<close>
 type_synonym opt_growths = \<open>tick \<Rightarrow> growth option\<close>
   
 
@@ -229,10 +111,10 @@ definition growth_outside :: \<open>growths \<Rightarrow> tick \<Rightarrow> gro
 *)
 definition Invt_A_Tick :: \<open>tick \<Rightarrow> tick \<Rightarrow> liquidity
                                 \<Rightarrow> growths \<Rightarrow> growth option \<Rightarrow> tick_info \<Rightarrow> bool \<close>
-  where \<open>Invt_A_Tick i current liquidity abst \<delta> ti
+  where \<open>Invt_A_Tick i current liquidity growth \<delta> ti
           \<longleftrightarrow> tick_info.liquidityGross ti = liquidity i \<and>
               tick_info.liquidityNet ti = liquidity (i + 1) - liquidity i \<and>
-              pred_option (\<lambda>\<delta>. tick_info.growth ti = growth_outside abst i \<delta> current) \<delta> \<and>
+              pred_option (\<lambda>\<delta>. tick_info.growth ti = growth_outside growth i \<delta> current) \<delta> \<and>
               tick_info.initialized ti = (\<delta> \<noteq> None)
         \<close>
 
@@ -275,34 +157,6 @@ lemma [\<phi>reason 1200]:
 
 
 section \<open>Axiomatic Semantics of Abstract Operations\<close>
-
-setup \<open>Sign.mandatory_path "ticks"\<close>
-
-definition get :: \<open>(tick_info \<Rightarrow> 'a) \<Rightarrow> ticks \<Rightarrow> tick \<Rightarrow> 'a\<close>
-  where \<open>get \<equiv> Fun.comp o case_option undefined o case_nosep\<close>
-
-lemma [simp]:
-  \<open> ticks i = Some x
-\<Longrightarrow> ticks.get access ticks i = access (nosep.dest x)\<close>
-  unfolding ticks.get_def by (cases x; simp)
-
-lemma [simp]:
-  \<open> ticks i = None
-\<Longrightarrow> ticks.get access ticks i = undefined\<close>
-  unfolding ticks.get_def by simp
-
-term \<open>map_option\<close>
-
-definition set :: \<open>('a::zero \<Rightarrow> 'a) \<Rightarrow> 'a nosep option \<Rightarrow> 'a nosep option\<close>
-  where \<open>set F x = (case x of Some (nosep x') \<Rightarrow> Some (nosep (F x'))
-                            | None \<Rightarrow> Some (nosep (F 0)))\<close>
-
-lemma [simp]:
-  \<open>ticks.set F (Some (nosep x)) = Some (nosep (F x))\<close>
-  \<open>ticks.set F (None) = Some (nosep (F 0))\<close>
-  unfolding ticks.set_def by simp_all
-
-setup \<open>Sign.parent_path\<close>
 
 debt_axiomatization
     op_get_liquidityGross :: \<open>(VAL, VAL) proc'\<close>
@@ -413,7 +267,6 @@ lemma sum_sub_2[simp]:
 
 abbreviation gSum where \<open>gSum growth \<equiv> (\<Sum>x = MIN_TICK-1..MAX_TICK. growth x)\<close>
 
-declare [[ML_print_depth = 1000]]
 
 proc getFeeGrowthInside:
   premises \<open>\<delta> lower \<noteq> None\<close> and \<open>\<delta> upper \<noteq> None\<close> (*They mean the upper tick and the lower tick is initialized*)
@@ -436,8 +289,7 @@ proc getFeeGrowthInside:
                   growth_outside_def, THEN conjunct1, THEN spec[where x=lower], simplified]
     note upper_simps[simp] =
           \<open>Invt_Ticks current liq growth \<delta> ticks\<close>[unfolded Invt_Ticks_def Invt_A_Tick_def
-                  growth_outside_def, THEN conjunct1, THEN spec[where x=upper], simplified]
-    note diff_diff_eq[symmetric, simp] ;;
+                  growth_outside_def, THEN conjunct1, THEN spec[where x=upper], simplified] ;;
 
     if \<open>$lower \<le> $current\<close> \<medium_left_bracket>
       $lower get_feeGrowth0
@@ -457,10 +309,7 @@ proc getFeeGrowthInside:
       $global_fee1 sub ($upper get_feeGrowth1)
     \<medium_right_bracket>. \<rightarrow> val fee0_above, fee1_above
 
-    note add_diff_eq[simp] \<delta>_lower[simp del] \<delta>_upper[simp del]
-         fee0_sum[simp] fee1_sum[simp]
-    have [simp]: \<open>\<delta>_lower = the (\<delta> lower)\<close> by (simp add: \<delta>_lower)
-    have [simp]: \<open>\<delta>_upper = the (\<delta> upper)\<close> by (simp add: \<delta>_upper) ;;
+    note add_diff_eq[simp] fee0_sum[simp] fee1_sum[simp] diff_diff_eq[symmetric, simp] ;;
       
     \<open>$global_fee0 - $fee0_below - $fee0_above\<close>
     \<open>$global_fee1 - $fee1_below - $fee1_above\<close>
@@ -504,6 +353,7 @@ proc cross:
   obtain fee0' fee1' spl' tc' time' liqG' liqN' init'
     where Tick_i[simp]: \<open>ticks i = tick_info (fee0', fee1', spl', tc', time') liqG' liqN' init'\<close>
     by (metis surj_pair tick_info.exhaust)
+
   ;; $i set_feeGrowth0 ($fee0 sub ($i get_feeGrowth0))
         set_feeGrowth1 ($fee1 sub ($i get_feeGrowth1))
         set_secondsPerLiquidity ($sec_per_liq sub ($i get_secondsPerLiquidity))
@@ -526,16 +376,5 @@ proc cross:
     .
 
   
-
-  thm get_secondsPerLiquidity
-
-
-(* $i set_feeGrowth0 ( $fee0 sub (get_feeGrowth0 $i), $x add ($y) ) *)
-
-  ;; $i $fee0 $i get_feeGrowth0 - set_feeGrowth0
-  ;; \<open>(growth.fee0 \<circ> tick_info.growth \<circ> ticks) ($i)\<close>
-
-  thm \<phi>
-
 
 end
