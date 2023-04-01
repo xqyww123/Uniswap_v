@@ -2,12 +2,9 @@ theory UniSWP_Common
   imports Phi_Semantics.PhiSem_Int_ArbiPrec HOL.Real
           Phi_Semantics.PhiSem_Real_Abst
           Phi_Semantics.PhiSem_CF_Routine
+          Phi_Semantics.PhiSem_Variable
 begin
 
-no_notation inter (infixl "Int" 70)
-        and union (infixl "Un" 65)
-        and Nats  ("\<nat>")
-        and Ints  ("\<int>")
 
 type_synonym token = int
 type_synonym fee = real

@@ -2,10 +2,6 @@ theory Uniswap_Virtual_Resource
   imports UniSWP_Common
 begin
 
-no_notation inter (infixl "Int" 70)
-        and union (infixl "Un" 65)
-        and Nats  ("\<nat>")
-        and Ints  ("\<int>")
 
 section \<open>Semantics\<close>
 
@@ -53,42 +49,16 @@ type_synonym ticks_resource = \<open>ticks nosep option\<close>
 
 
 
-
-
-resource_space \<phi>uniswap_res = \<phi>empty_res +
-  R_ticks :: ticks_resource
-
-debt_axiomatization R_ticks :: \<open>ticks_resource resource_entry\<close>
-  where \<phi>uniswap_res_ax: \<open>\<phi>uniswap_res R_ticks\<close>
-
-interpretation \<phi>uniswap_res R_ticks using \<phi>uniswap_res_ax .
-
-hide_fact \<phi>uniswap_res_ax \<phi>uniswap_res_axioms \<phi>uniswap_res_fields_axioms
-
-debt_axiomatization
-  res_valid_ticks[simp]: \<open>Resource_Validator R_ticks.name =
-                           {R_ticks.inject ticks |ticks. True}\<close>
-
-interpretation R_ticks: nonsepable_mono_resource R_ticks \<open>UNIV\<close>
-  apply (standard; simp add: set_eq_iff image_iff)
-  by (metis nosep.collapse not_None_eq)
+resource_space \<phi>uniswap =
+  ticks :: \<open>UNIV::ticks_resource set\<close> (nonsepable_mono_resource)
+  by (standard; simp add: set_eq_iff image_iff)
 
 
 subsubsection \<open>Fiction\<close>
 
-fiction_space \<phi>uniswap_fic :: \<open>RES_N \<Rightarrow> RES\<close> =
-  FIC_ticks :: \<open>R_ticks.raw_basic_fiction \<F>_it\<close>
-
-debt_axiomatization FIC_ticks :: \<open>ticks_resource fiction_entry\<close>
-  where \<phi>uniswap_fic_ax: \<open>\<phi>uniswap_fic INTERPRET FIC_ticks\<close>
-
-interpretation \<phi>uniswap_fic INTERPRET FIC_ticks using \<phi>uniswap_fic_ax .
-
-hide_fact \<phi>uniswap_fic_ax \<phi>uniswap_fic_axioms
-
-interpretation FIC_ticks: identity_fiction \<open>UNIV\<close> R_ticks FIC_ticks
+fiction_space \<phi>uniswap =
+  ticks :: \<open>RES.ticks.basic_fiction \<F>_it\<close> (identity_fiction RES.ticks)
   by (standard; simp add: set_eq_iff image_iff)
-
 
 section \<open>\<phi>-Types - Part I - Raw\<close>
 
@@ -124,7 +94,7 @@ definition Invt_Ticks :: \<open>tick \<Rightarrow> liquidity \<Rightarrow> growt
           \<longleftrightarrow> (\<forall>i. Invt_A_Tick i current liquidity abst (\<delta> i) (ticks i))
               \<and> current \<in> {MIN_TICK-1..MAX_TICK}\<close>
 
-abbreviation RawTicks :: \<open>(fiction, ticks) \<phi>\<close> where \<open>RawTicks \<equiv> (FIC_ticks.\<phi> (\<black_circle> (Nosep Identity)))\<close>
+abbreviation RawTicks :: \<open>(fiction, ticks) \<phi>\<close> where \<open>RawTicks \<equiv> (FIC.ticks.\<phi> (\<black_circle> (Nosep Identity)))\<close>
 
 definition Ticks :: \<open>tick \<Rightarrow> opt_growths \<Rightarrow> (fiction, (liquidity \<times> growths)) \<phi>\<close>
   where [\<phi>defs]: \<open>Ticks current \<delta> = (\<lambda>(liquidity, growth).
@@ -150,7 +120,7 @@ lemma [\<phi>reason 1200]:
 \<Longrightarrow> ticks \<Ztypecolon> RawTicks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (liquidity, growth) \<Ztypecolon> Ticks current \<delta>
     @action to (Ticks current \<delta>)\<close> \<medium_left_bracket> \<medium_right_bracket>. .
 
-lemma [\<phi>reason 1200]:
+lemma [\<phi>reason 3000]:
   \<open> (liquidity, growth) \<Ztypecolon> Ticks current \<delta> \<i>\<m>\<p>\<l>\<i>\<e>\<s> ticks \<Ztypecolon> RawTicks \<s>\<u>\<b>\<j> ticks. Invt_Ticks current liquidity growth \<delta> ticks
     @action to RawTicks\<close>
   \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>. .
@@ -267,6 +237,8 @@ lemma sum_sub_2[simp]:
 
 abbreviation gSum where \<open>gSum growth \<equiv> (\<Sum>x = MIN_TICK-1..MAX_TICK. growth x)\<close>
 
+declare [[\<phi>hide_techinicals = false]]
+
 
 proc getFeeGrowthInside:
   premises \<open>\<delta> lower \<noteq> None\<close> and \<open>\<delta> upper \<noteq> None\<close> (*They mean the upper tick and the lower tick is initialized*)
@@ -278,8 +250,9 @@ proc getFeeGrowthInside:
   output \<open>(liq, growth) \<Ztypecolon> Ticks current \<delta> \<heavy_comma>
           growth.fee0 (sum growth {lower..<upper} - the (\<delta> lower) + the (\<delta> upper)) \<Ztypecolon> \<v>\<a>\<l> \<real> \<heavy_comma>
           growth.fee1 (sum growth {lower..<upper} - the (\<delta> lower) + the (\<delta> upper)) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
-  is [routine]
+  is [routine_basic]
   \<medium_left_bracket> to \<open>RawTicks\<close> ;;
+
     obtain \<delta>_lower \<delta>_upper where \<delta>_lower[simp]: \<open>\<delta> lower = Some \<delta>_lower\<close>
                             and \<delta>_upper[simp]: \<open>\<delta> upper = Some \<delta>_upper\<close>
       using the_\<phi>(1) the_\<phi>(2) by blast
@@ -315,7 +288,8 @@ proc getFeeGrowthInside:
     \<open>$global_fee1 - $fee1_below - $fee1_above\<close>
   \<medium_right_bracket>. .
 
-  thm getFeeGrowthInside_def[simplified \<phi>V_simps]
+thm getFeeGrowthInside_def[simplified \<phi>V_simps]
+thm getFeeGrowthInside_\<phi>app
 
 (*\<heavy_comma>
           liq i - liq current \<Ztypecolon> \<v>\<a>\<l> \<int> *)
@@ -349,7 +323,7 @@ proc cross:
            sec_per_liq \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> tick_cumu \<Ztypecolon> \<v>\<a>\<l> \<int> \<heavy_comma> time \<Ztypecolon> \<v>\<a>\<l> \<int>\<close>
   output \<open>(liq, growth) \<Ztypecolon> Ticks (if j < i then i else i - 1) \<delta> \<close>
   is [routine]
-  \<medium_left_bracket> to \<open>RawTicks\<close>
+  \<medium_left_bracket> to \<open>RawTicks\<close> \<exists>ticks
   obtain fee0' fee1' spl' tc' time' liqG' liqN' init'
     where Tick_i[simp]: \<open>ticks i = tick_info (fee0', fee1', spl', tc', time') liqG' liqN' init'\<close>
     by (metis surj_pair tick_info.exhaust)
