@@ -7,7 +7,6 @@ section \<open>Semantics\<close>
 
 subsection \<open>Models of Tick\<close>
 
-(*We do this ugly job because prod is configured with all algebraic properties!, like ring*)
 declare [[\<phi>trace_reasoning = 0]]
 
 datatype tick_info = tick_info
