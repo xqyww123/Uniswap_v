@@ -1,4 +1,4 @@
-theory Uniswap_Virtual_Resource
+theory UniSWP_Tick
   imports UniSWP_Common
 begin
 
@@ -8,7 +8,7 @@ section \<open>Semantics\<close>
 subsection \<open>Models of Tick\<close>
 
 (*We do this ugly job because prod is configured with all algebraic properties!, like ring*)
-
+declare [[\<phi>trace_reasoning = 0]]
 
 datatype tick_info = tick_info
   (growth: growth)
@@ -43,14 +43,11 @@ definition zero_tick_info :: tick_info where [simp]: \<open>zero_tick_info = tic
 instance ..
 end
 
-
 type_synonym ticks = \<open>tick \<Rightarrow> tick_info\<close>
-type_synonym ticks_resource = \<open>ticks nosep option\<close>
 
-
-
+(*
 resource_space \<phi>uniswap =
-  ticks :: \<open>UNIV::ticks_resource set\<close> (nonsepable_mono_resource)
+  ticks :: \<open>UNIV::ticks nonsepable_mono_resource set\<close> (nonsepable_mono_resource)
   by (standard; simp add: set_eq_iff image_iff)
 
 
@@ -58,7 +55,7 @@ subsubsection \<open>Fiction\<close>
 
 fiction_space \<phi>uniswap =
   ticks :: \<open>RES.ticks.basic_fiction \<F>_it\<close> (identity_fiction RES.ticks)
-  by (standard; simp add: set_eq_iff image_iff)
+  by (standard; simp add: set_eq_iff image_iff) *)
 
 section \<open>\<phi>-Types - Part I - Raw\<close>
 
@@ -66,7 +63,6 @@ section \<open>\<phi>-Types - Part I - Raw\<close>
 subsection \<open>Tick Info Data\<close>
 
 type_synonym opt_growths = \<open>tick \<Rightarrow> growth option\<close>
-  
 
 definition growth_outside :: \<open>growths \<Rightarrow> tick \<Rightarrow> growth \<Rightarrow> tick \<Rightarrow> growth\<close>
   where \<open>growth_outside abs_func tick delta current =
@@ -94,13 +90,13 @@ definition Invt_Ticks :: \<open>tick \<Rightarrow> liquidity \<Rightarrow> growt
           \<longleftrightarrow> (\<forall>i. Invt_A_Tick i current liquidity abst (\<delta> i) (ticks i))
               \<and> current \<in> {MIN_TICK-1..MAX_TICK}\<close>
 
-abbreviation RawTicks :: \<open>(fiction, ticks) \<phi>\<close> where \<open>RawTicks \<equiv> (FIC.ticks.\<phi> (\<black_circle> (Nosep Identity)))\<close>
+locale Tick_resource =
+  fixes RawTicks :: \<open>(fiction, ticks) \<phi>\<close>
+begin
 
 definition Ticks :: \<open>tick \<Rightarrow> opt_growths \<Rightarrow> (fiction, (liquidity \<times> growths)) \<phi>\<close>
   where [\<phi>defs]: \<open>Ticks current \<delta> = (\<lambda>(liquidity, growth).
                     ticks \<Ztypecolon> RawTicks \<s>\<u>\<b>\<j> ticks. Invt_Ticks current liquidity growth \<delta> ticks)\<close>
-
-declare [[\<phi>trace_reasoning = 1]]
 
 (*A problem of the automatic transformation rule is,
   look, the source \<open>ticks\<close> and the target \<open>liquidity, growth, \<delta>\<close> has no common term,
@@ -125,11 +121,13 @@ lemma [\<phi>reason 3000]:
     @action to RawTicks\<close>
   \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>. .
 
+end
 
 section \<open>Axiomatic Semantics of Abstract Operations\<close>
 
-debt_axiomatization
-    op_get_liquidityGross :: \<open>(VAL, VAL) proc'\<close>
+(*Someday when we finish the solidity semantics, we will instantiate this!*)
+locale Tick_spec = Tick_resource +
+fixes op_get_liquidityGross :: \<open>(VAL, VAL) proc'\<close>
 and op_set_liquidityGross :: \<open>(VAL \<times> VAL, VAL) proc'\<close>
 and op_get_liquidityNet :: \<open>(VAL, VAL) proc'\<close>
 and op_set_liquidityNet :: \<open>(VAL \<times> VAL, VAL) proc'\<close>
@@ -145,7 +143,7 @@ and op_get_secondsPerLiquidity :: \<open>(VAL, VAL) proc'\<close>
 and op_set_secondsPerLiquidity :: \<open>(VAL \<times> VAL, VAL) proc'\<close>
 and op_get_seconds :: \<open>(VAL, VAL) proc'\<close>
 and op_set_seconds :: \<open>(VAL \<times> VAL, VAL) proc'\<close>
-where
+assumes
     get_liquidityGross_\<phi>app[\<phi>synthesis 1200]:
       \<open> \<p>\<r>\<o>\<c> op_get_liquidityGross ri \<lbrace> f \<Ztypecolon> RawTicks\<heavy_comma> i \<Ztypecolon> \<v>\<a>\<l>[ri] Tick
                                    \<longmapsto> f \<Ztypecolon> RawTicks\<heavy_comma> (liquidityGross o f) i \<Ztypecolon> \<v>\<a>\<l> \<int> \<rbrace>\<close>
@@ -211,11 +209,10 @@ and set_seconds_\<phi>app:
             \<lbrace> f \<Ztypecolon> RawTicks\<heavy_comma> i \<Ztypecolon> \<v>\<a>\<l>[ri] Tick \<heavy_comma> v \<Ztypecolon> \<v>\<a>\<l>[rv] \<int>
                 \<longmapsto> f(i := tick_info.map_growth (growth.map_seconds (\<lambda>_. v)) (f i)) \<Ztypecolon> RawTicks\<heavy_comma> i \<Ztypecolon> \<v>\<a>\<l> Tick \<rbrace>\<close>
 
-thm set_feeGrowth0_\<phi>app
-
 
 section \<open>Verify\<close>
 
+subsection \<open>Auxiliary Library\<close>
 
 lemma interval_sub_1[simp]:
   \<open>A \<le> B \<Longrightarrow> {A..C} - {A..<B} = {B..C}\<close>
@@ -237,8 +234,26 @@ lemma sum_sub_2[simp]:
 
 abbreviation gSum where \<open>gSum growth \<equiv> (\<Sum>x = MIN_TICK-1..MAX_TICK. growth x)\<close>
 
-declare [[\<phi>hide_techinicals = false]]
+lemma gSum_subtract1[simp]:
+  \<open> MIN_TICK-1 \<le> i \<and> i \<le> j \<and> j \<le> MAX_TICK
+\<Longrightarrow> gSum growth - growth_outside growth i \<delta> j = growth_outside growth i \<delta> (i-1)\<close>
+  unfolding growth_outside_def by auto
 
+lemma gSum_subtract2[simp]:
+  \<open> MIN_TICK-1 \<le> j \<and> j < i \<and> i \<le> MAX_TICK
+\<Longrightarrow> gSum growth - growth_outside growth i \<delta> j = growth_outside growth i \<delta> i\<close>
+  unfolding growth_outside_def by auto
+
+lemma growth_outside_shift_mono:
+  \<open> i \<le> j \<and> j \<le> k   \<or>   j < i \<and> k \<le> j
+\<Longrightarrow> growth_outside growth i \<delta> j = growth_outside growth i \<delta> k\<close>
+  unfolding growth_outside_def by auto
+
+abbreviation \<open>next_initialized \<delta> i j \<equiv> (\<forall>k. i < k \<and> k < j \<longrightarrow> \<delta> k = None)\<close>
+
+
+
+context Tick_spec begin
 
 proc getFeeGrowthInside:
   premises \<open>\<delta> lower \<noteq> None\<close> and \<open>\<delta> upper \<noteq> None\<close> (*They mean the upper tick and the lower tick is initialized*)
@@ -255,8 +270,8 @@ proc getFeeGrowthInside:
 
     obtain \<delta>_lower \<delta>_upper where \<delta>_lower[simp]: \<open>\<delta> lower = Some \<delta>_lower\<close>
                             and \<delta>_upper[simp]: \<open>\<delta> upper = Some \<delta>_upper\<close>
-      using the_\<phi>(1) the_\<phi>(2) by blast
-
+      using the_\<phi>(2) the_\<phi>(3) by blast
+    
     note lower_simps[simp] =
           \<open>Invt_Ticks current liq growth \<delta> ticks\<close>[unfolded Invt_Ticks_def Invt_A_Tick_def
                   growth_outside_def, THEN conjunct1, THEN spec[where x=lower], simplified]
@@ -294,23 +309,6 @@ thm getFeeGrowthInside_\<phi>app
 (*\<heavy_comma>
           liq i - liq current \<Ztypecolon> \<v>\<a>\<l> \<int> *)
 
-lemma gSum_subtract1[simp]:
-  \<open> MIN_TICK-1 \<le> i \<and> i \<le> j \<and> j \<le> MAX_TICK
-\<Longrightarrow> gSum growth - growth_outside growth i \<delta> j = growth_outside growth i \<delta> (i-1)\<close>
-  unfolding growth_outside_def by auto
-
-lemma gSum_subtract2[simp]:
-  \<open> MIN_TICK-1 \<le> j \<and> j < i \<and> i \<le> MAX_TICK
-\<Longrightarrow> gSum growth - growth_outside growth i \<delta> j = growth_outside growth i \<delta> i\<close>
-  unfolding growth_outside_def by auto
-
-lemma growth_outside_shift_mono:
-  \<open> i \<le> j \<and> j \<le> k   \<or>   j < i \<and> k \<le> j
-\<Longrightarrow> growth_outside growth i \<delta> j = growth_outside growth i \<delta> k\<close>
-  unfolding growth_outside_def by auto
-
-abbreviation \<open>next_initialized \<delta> i j \<equiv> (\<forall>k. i < k \<and> k < j \<longrightarrow> \<delta> k = None)\<close>
-
 proc cross:
   premises \<open>\<delta> i \<noteq> None\<close>
     and    \<open>if j < i then next_initialized \<delta> j i else next_initialized \<delta> (i-1) j\<close>
@@ -343,12 +341,12 @@ proc cross:
   note th3 = th2[THEN conjunct1]
 
   \<medium_right_bracket> unfolding Invt_Ticks_def Invt_A_Tick_def
-    using th2 th3[THEN spec[where x=i]] Tick_i the_\<phi>(1,2) the_\<phi>lemmata(1)
+    using th2 th3[THEN spec[where x=i]] Tick_i the_\<phi>(2,3) the_\<phi>lemmata(1)
     apply (auto)
     apply (smt (verit) th3 growth_outside_shift_mono option.pred_inject(1) option.pred_inject(2))
     by (smt (verit) growth_outside_def option.pred_inject(1) option.pred_inject(2) th3)
     .
 
-  
+end
 
 end
