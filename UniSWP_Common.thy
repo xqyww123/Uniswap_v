@@ -88,7 +88,8 @@ text \<open>The implementation records a settled revenue and the timestamp of th
 
 
 
-
+(*a quick formalization of Solidity address, which should be given
+ in the semantic formalization of Solidity.*)
 definition Address :: \<open>(VAL, address) \<phi>\<close>
   where [\<phi>defs]: \<open>Address a = (a \<Ztypecolon> \<int>)\<close>
 
