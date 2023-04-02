@@ -13,7 +13,7 @@ proc getAmount0Delta':
     if \<open>$rA > $rB\<close> \<medium_left_bracket> $rB $rA \<rightarrow> rA, rB \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;; 
 
     $liq to_real \<rightarrow> val numerator1 ;;
-    \<open>$rB - $rA\<close> (* is \<open>\<bar>rB - rA\<bar>\<close> *) \<rightarrow> val numerator2 ;;
+    \<open>$rB - $rA\<close> \<rightarrow> val numerator2 ;;
 
     require (\<open> $rA > 0 \<close>) ;;
 
@@ -50,22 +50,63 @@ proc getAmount0Delta:
 
 
 
-proc getNextSqrtPriceFromAmount0RoundingUp:
+proc getNextSqrtPriceFromAmount0:
   input \<open>sp \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> liq \<Ztypecolon> \<v>\<a>\<l> \<nat>\<heavy_comma> amount \<Ztypecolon> \<v>\<a>\<l> \<nat>\<heavy_comma> add \<Ztypecolon> \<v>\<a>\<l> \<bool>\<close>
-  premises \<open>0 < liq\<close>
+  premises \<open>0 < liq \<and> 0 < sp\<close>
   output \<open> (if add then liq / (liq / sp + amount) else liq / (liq / sp - amount)) \<Ztypecolon> \<v>\<a>\<l> \<real> \<close>
   is [routine]
   \<medium_left_bracket>
     if \<open>$amount = 0\<close> \<medium_left_bracket> return ($sp) \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;; (*Note, we have \<open>0 < amount\<close> in thm \<phi> now*)
     $liq to_real \<rightarrow> val numerator1 ;;
+    if \<open>$add\<close> \<medium_left_bracket>
+      \<open>real $amount * $sp\<close> \<rightarrow> val product ;;
+      if \<open>$product / real $amount = $sp\<close> \<medium_left_bracket>
+        \<open>$numerator1 + $product\<close> \<rightarrow> val denominator ;;
+        if \<open>$denominator \<ge> $numerator1\<close> \<medium_left_bracket>
+          return (\<open>$numerator1 * $sp / $denominator\<close>)
+            affirm using \<phi> by (simp add: add_frac_num) ;; (*TODO: add simplification before \<medium_right_bracket>. so this ;; can be removed*)
+        \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>.
+      \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
+      return ($numerator1 div (\<open>$numerator1 / $sp\<close> add ($amount to_real)))
+    \<medium_right_bracket>. \<medium_left_bracket>
+      \<open>real $amount * $sp\<close> \<rightarrow> val product ;;
+      require (\<open>$product / real $amount = $sp\<close>) ;;
+      \<open>$numerator1 - $product\<close> \<rightarrow> val denominator ;;
+      return (\<open>$numerator1 * $sp / $denominator\<close>)
+      affirm using \<phi> by (simp add: add_divide_eq_if_simps(5))
+    \<medium_right_bracket>. ;;
+  \<medium_right_bracket>. .
 
-if \<open>$add\<close> \<medium_left_bracket>
-  ;; \<open>real ($amount)\<close>
-  ;; \<open>real_of_int ($amount)\<close>
-  ;;
-      \<open>$amount * $sp\<close> 
+proc getNextSqrtPriceFromAmount1:
+  input \<open>sp \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> liq \<Ztypecolon> \<v>\<a>\<l> \<nat>\<heavy_comma> amount \<Ztypecolon> \<v>\<a>\<l> \<nat>\<heavy_comma> add \<Ztypecolon> \<v>\<a>\<l> \<bool>\<close>
+  premises \<open>\<not> add \<longrightarrow> real amount / real liq < sp\<close>
+  output \<open>(if add then sp + amount / liq else sp - amount / liq) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
+  is [routine]
+  \<medium_left_bracket>
+    if \<open>$add\<close> \<medium_left_bracket>
+      \<open>real $amount / real $liq\<close> \<rightarrow> val quotient ;;
+      return (\<open>$sp + $quotient\<close>)
+    \<medium_right_bracket>. \<medium_left_bracket>
+      \<open>real $amount / real $liq\<close> \<rightarrow> val quotient ;;
+      require (\<open>$sp > $quotient\<close>) ;;
+      return (\<open>$sp - $quotient\<close>)
+    \<medium_right_bracket>. ;;
+  \<medium_right_bracket>. .
 
-
+proc getNextSqrtPriceFromInput:
+  input \<open>sp \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> liq \<Ztypecolon> \<v>\<a>\<l> \<nat>\<heavy_comma> amountIn \<Ztypecolon> \<v>\<a>\<l> \<nat>\<heavy_comma> zeroForOne \<Ztypecolon> \<v>\<a>\<l> \<bool>\<close>
+  premises \<open>0 < sp \<and> 0 < liq\<close>
+  output \<open>(if zeroForOne then liq / (liq / sp + real amountIn) else sp + amountIn / liq) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
+  is [routine]
+  \<medium_left_bracket>
+    require (\<open>$sp > 0\<close>) ;;
+    require (\<open>$liq > 0\<close>) ;;
+    if \<open>$zeroForOne\<close> \<medium_left_bracket>
+      getNextSqrtPriceFromAmount0 ($sp, $liq, $amountIn, \<open>True\<close>)
+    \<medium_right_bracket>. \<medium_left_bracket>
+      getNextSqrtPriceFromAmount1 ($sp, $liq, $amountIn, \<open>True\<close>)
+    \<medium_right_bracket>. return (*it returns the result of the branch*)
+  \<medium_right_bracket>. .
 
 
 end
