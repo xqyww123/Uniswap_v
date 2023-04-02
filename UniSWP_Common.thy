@@ -1,6 +1,6 @@
 theory UniSWP_Common
-  imports Phi_Semantics.PhiSem_Int_ArbiPrec HOL.Real
-          Phi_Semantics.PhiSem_Real_Abst
+  imports HOL.Real Phi_Semantics.PhiSem_CF_Solidity
+          Phi_Semantics.PhiSem_Real_Abst_Int
           Phi_Semantics.PhiSem_CF_Routine
           Phi_Semantics.PhiSem_Variable
 begin

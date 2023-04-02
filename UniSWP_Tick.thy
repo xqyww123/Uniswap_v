@@ -344,7 +344,7 @@ proc cross:
     apply (auto)
     apply (smt (verit) th3 growth_outside_shift_mono option.pred_inject(1) option.pred_inject(2))
     by (smt (verit) growth_outside_def option.pred_inject(1) option.pred_inject(2) th3)
-    .
+  .
 
 end
 
