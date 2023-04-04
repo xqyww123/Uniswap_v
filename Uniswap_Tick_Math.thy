@@ -15,6 +15,10 @@ lemma price_of_def: \<open>price_of t = FACTOR powr (of_int t / 2)\<close>
 
 hide_fact price_of_def'
 
+lemma price_of_L0[simp]:
+  \<open>0 < price_of x\<close>
+  using FACTOR_LG_1 price_of_def by auto
+
 lemma price_of_mono': \<open>mono price_of\<close>
   unfolding price_of_def mono_on_def
   by (simp add: FACTOR_LG_1)
@@ -87,9 +91,28 @@ text \<open>As we are not planning verifying the numeric calculation and its pre
 
 debt_axiomatization getSqrtRatioAtTick :: \<open>(VAL,VAL) proc'\<close>
   where getSqrtRatioAtTick_\<phi>app:
-            \<open>\<p>\<r>\<o>\<c> getSqrtRatioAtTick v \<lbrace> t \<Ztypecolon> \<v>\<a>\<l>[v] Tick \<longmapsto> price_of t \<Ztypecolon> \<v>\<a>\<l> Price \<rbrace>\<close>
+            \<open>\<p>\<r>\<o>\<c> getSqrtRatioAtTick v \<lbrace> t \<Ztypecolon> \<v>\<a>\<l>[v] Tick \<longmapsto> price_of t \<Ztypecolon> \<v>\<a>\<l> \<real> \<rbrace>\<close>
     and getTickAtSqrtRatio_\<phi>app:
             \<open>\<p>\<r>\<e>\<m>\<i>\<s>\<e> 0 < p
-         \<Longrightarrow> \<p>\<r>\<o>\<c> getTickAtSqrtRatio v \<lbrace> p \<Ztypecolon> \<v>\<a>\<l>[v] Price \<longmapsto> tick_of_price p \<Ztypecolon> \<v>\<a>\<l> Tick \<rbrace>\<close>
+         \<Longrightarrow> \<p>\<r>\<o>\<c> getTickAtSqrtRatio v \<lbrace> p \<Ztypecolon> \<v>\<a>\<l>[v] \<real> \<longmapsto> tick_of_price p \<Ztypecolon> \<v>\<a>\<l> Tick \<rbrace>\<close>
+
+abbreviation \<open>MIN_PRICE \<equiv> price_of MIN_TICK\<close>
+abbreviation \<open>MAX_PRICE \<equiv> price_of MAX_TICK\<close>
+
+lemma [\<phi>reason 1000]:
+  \<open> Is_Literal X
+\<Longrightarrow> Is_Literal (price_of X)\<close>
+  unfolding Is_Literal_def .
+
+proc (nodef) MIN_PRICE[\<phi>synthesis 1100]:
+  input \<open>Void\<close>
+  output \<open>MIN_PRICE \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
+  \<medium_left_bracket> op_const_areal[where x=\<open>MIN_PRICE\<close>] \<medium_right_bracket>. .
+
+proc (nodef) MAX_PRICE[\<phi>synthesis 1100]:
+  input \<open>Void\<close>
+  output \<open>MAX_PRICE \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
+  \<medium_left_bracket> op_const_areal[where x=\<open>MAX_PRICE\<close>] \<medium_right_bracket>. .
+
 
 end

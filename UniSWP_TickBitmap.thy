@@ -15,11 +15,10 @@ locale Tickmap_spec =
     \<open> \<p>\<r>\<o>\<c> op_get_tickmap ri \<lbrace> m \<Ztypecolon> Tickmap\<heavy_comma> i \<Ztypecolon> \<v>\<a>\<l>[ri] Tick
                           \<longmapsto> m \<Ztypecolon> Tickmap\<heavy_comma> m i \<Ztypecolon> \<v>\<a>\<l> \<bool>\<rbrace> \<close>
   and nextInitializedTickWithinOneWord_\<phi>app:
-    (*we don't consider TickSpacing right now because we are not verifying the implementation of
-      the bitmap.*)
+    (*we don't consider TickSpacing in this abstract specification.*)
     \<open> \<p>\<r>\<o>\<c> nextInitializedTickWithinOneWord (rlte\<^bold>, ri)
-          \<lbrace> m \<Ztypecolon> Tickmap\<heavy_comma> i \<Ztypecolon> \<v>\<a>\<l>[ri] Tick\<heavy_comma> lte \<Ztypecolon> \<v>\<a>\<l>[rlte] \<bool>
-        \<longmapsto> m \<Ztypecolon> Tickmap\<heavy_comma> j \<Ztypecolon> \<v>\<a>\<l> Tick\<heavy_comma> m j \<Ztypecolon> \<v>\<a>\<l> \<bool> \<s>\<u>\<b>\<j> j.
+          \<lbrace> m \<Ztypecolon> Tickmap\<heavy_comma> i \<Ztypecolon> \<v>\<a>\<l>[ri] \<int>\<heavy_comma> lte \<Ztypecolon> \<v>\<a>\<l>[rlte] \<bool>
+        \<longmapsto> m \<Ztypecolon> Tickmap\<heavy_comma> j \<Ztypecolon> \<v>\<a>\<l> \<int>\<heavy_comma> m j \<Ztypecolon> \<v>\<a>\<l> \<bool> \<s>\<u>\<b>\<j> j.
              (if lte then j \<le> i \<and> (\<forall>k \<in> {j..<i}. \<not> m k)
                      else i < j \<and> (\<forall>k \<in> {i<..<j}. \<not> m k)) \<rbrace> \<close>
 
