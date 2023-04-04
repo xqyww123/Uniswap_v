@@ -82,7 +82,6 @@ definition Invt_A_Tick :: \<open>tick \<Rightarrow> tick \<Rightarrow> liquidity
               pred_option (\<lambda>\<delta>. tick_info.growth ti = growth_outside growth i \<delta> current) \<delta> \<and>
               tick_info.initialized ti = (\<delta> \<noteq> None) \<and>
               (liquidity_gross i = 0 \<longleftrightarrow> \<delta> = None) \<and>
-              ((i < MIN_TICK \<or> MAX_TICK < i) \<longrightarrow> liquidity_gross i = 0 \<and> liquidity i = 0) \<and>
               (liquidity_gross i = 0 \<longrightarrow> liquidity i = liquidity (i-1))
         \<close>
 

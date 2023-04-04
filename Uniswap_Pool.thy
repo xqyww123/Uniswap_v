@@ -146,7 +146,7 @@ lemma [\<phi>reason 100]:
   \<medium_left_bracket> premises I
     I construct\<phi> \<open>(price, i, unlocked, Lg, L, growth, \<delta>, fee_proto) \<Ztypecolon> Uniswap_Pool\<close> \<medium_right_bracket>. .
 
-declare Invt_Ticks_def[simp]
+declare Invt_Ticks_def[simp] Invt_A_Tick_def[simp]
 
 proc swap:
   input \<open>(price, i, unlocked, Lg, L, growth, \<delta>, fee_protocal) \<Ztypecolon> Uniswap_Pool\<heavy_comma>
@@ -207,16 +207,9 @@ proc swap:
     \<medium_left_bracket>
       var step_price_start ;;
       $price \<rightarrow> step_price_start ;;
-      nextInitializedTickWithinOneWord ($tick, $zeroForOne) \<exists>tick_next' \<rightarrow> var tick_next, val initialized ;;
+      nextInitializedTickWithinOneWord ($tick, $zeroForOne) \<exists>tick_next \<rightarrow> var tick_next, val initialized ;;
 
-      define tick_next where \<open>tick_next = max MIN_TICK (min MAX_TICK tick_next')\<close> ;;
-
-      if \<open>$tick_next < MIN_TICK\<close> \<medium_left_bracket> \<open>MIN_TICK\<close> \<rightarrow> tick_next \<medium_right_bracket>. \<medium_left_bracket>
-        if \<open>$tick_next > MAX_TICK\<close> \<medium_left_bracket> \<open>MAX_TICK\<close> \<rightarrow> tick_next \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
-      \<medium_right_bracket>. as \<open>tick_next \<Ztypecolon> Tick\<close> affirm unfolding tick_next_def using \<phi> by auto ;;
-
-      have t2: \<open>0 < Lg tick_next' \<Longrightarrow> 0 < Lg tick_next\<close>
-        using \<phi> by (auto simp add: Invt_Ticks_def tick_next_def) ;;
+      op_require' (\<open>MIN_TICK \<le> $tick_next \<and> $tick_next \<le> MAX_TICK\<close>) ;;
 
       getSqrtRatioAtTick ($tick_next) \<rightarrow> val step_price_next ;;
 
@@ -267,27 +260,51 @@ proc swap:
       is \<open>I_fee_growth_global growth''\<close>
       affirm unfolding I_fee_growth_global_def growth''_def
               using \<phi> apply (auto simp add: fun_eq_iff)
-              using leI nle_le by blast ;;
-      
+              by (meson linorder_not_le nle_le) ;;
+              
+      define real_next_tick where \<open>real_next_tick = (if zeroForOne then tick_next - 1 else tick_next)\<close> ;;
+
       if \<open>$price = $step_price_next\<close> \<medium_left_bracket>
         if \<open>$initialized\<close> \<medium_left_bracket>
-           have t4: \<open>0 < Lg tick_next\<close> using t2 the_\<phi>(11) by blast ;;
+
            $tick_next,
+
            sel ($fee_growth_global, \<open>pool.fee_growth_0 _\<close>, $zeroForOne)
               is \<open>global_fee0_growth growth''\<close>
               affirm unfolding I_fee_growth_global_def growth''_def using \<phi> apply auto by (metis fee0_sum) ;;
+
            sel (\<open>pool.fee_growth_1 _\<close>, $fee_growth_global, $zeroForOne)
               is \<open>global_fee1_growth growth''\<close>
               affirm unfolding I_fee_growth_global_def growth''_def using \<phi> apply auto by (metis fee1_sum) ;;
            (*TODO: syntax*)
-           tick_cross affirm using t4 by fastforce ;;
+           tick_cross affirm using the_\<phi>(15) by force ;;
               affirm using \<phi> apply auto
-                apply (metis \<open>tick_next \<in> {MIN_TICK..MAX_TICK} \<and> (if tick_next' < MIN_TICK then MIN_TICK else if MAX_TICK < tick_next' then MAX_TICK else tick_next') = tick_next \<and> True\<close> greaterThanLessThan_iff linorder_not_le max.absorb3 max.commute max.orderE max_less_iff_conj)
-                by (smt (verit, best) atLeastLessThan_iff order_le_less_trans tick_next_def zle_diff1_eq) ;;
-           
-           
-              thm \<phi>
+                apply (metis atLeastLessThan_iff greaterThanLessThan_iff linorder_not_le nle_le)
+                by (metis atLeastLessThan_iff linorder_not_le nle_le order_le_less_trans zle_diff1_eq) ;;
+            \<rightarrow> var liquidityNet ;; \<open>_ \<Ztypecolon> Ticks _ _\<close> ;;
 
+            if \<open>$zeroForOne\<close> \<medium_left_bracket> \<open>- $liquidityNet\<close> \<rightarrow> liquidityNet \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
+              
+              have t7: \<open>zeroForOne \<Longrightarrow> L tick_next = L j\<close>
+                by (smt (verit, del_insts) \<open>if j < tick_next then next_initialized Lg j tick_next else next_initialized Lg (tick_next - 1) j\<close> the_\<phi>(13) the_\<phi>lemmata(2))
+              have t8: \<open>\<not> zeroForOne \<Longrightarrow> \<forall>k. j < k \<and> k \<le> tick_next - 1 \<longrightarrow> Lg k = 0\<close>
+                using \<open>if j < tick_next then next_initialized Lg j tick_next else next_initialized Lg (tick_next - 1) j\<close> by auto
+              have t9: \<open>\<And>k. Lg k = 0 \<Longrightarrow> L k = L (k - 1)\<close>
+                using the_\<phi>(1)[unfolded Invt_Ticks_def Invt_A_Tick_def] by blast
+              have t10: \<open>\<not> zeroForOne \<Longrightarrow> j \<le> tick_next - 1\<close>
+                using the_\<phi>lemmata(2) by fastforce 
+              have t11: \<open>\<not> zeroForOne \<Longrightarrow> L (tick_next - 1) = L j\<close>
+                subgoal premises P
+                  using t8 apply (induct rule: int_ge_induct[where k=j and i=\<open>tick_next-1\<close>, OF t10, OF P]; simp)
+                  using P t9 by fastforce . ;;
+
+              \<open>$liquidity + $liquidityNet\<close> \<rightarrow> $liquidity is \<open>L real_next_tick\<close>
+                affirm unfolding real_next_tick_def using t11 t7 by force ;;
+            \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
+            note [[\<phi>trace_reasoning = 2]]
+            ;;
+            thm \<phi>
+              thm the_\<phi>
       ;;$amount_reamining
 
     thm \<phi>
