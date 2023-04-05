@@ -80,9 +80,7 @@ definition Invt_A_Tick :: \<open>tick \<Rightarrow> tick \<Rightarrow> liquidity
           \<longleftrightarrow> tick_info.liquidityGross ti = liquidity_gross i \<and>
               tick_info.liquidityNet ti = liquidity i - liquidity (i-1) \<and>
               pred_option (\<lambda>\<delta>. tick_info.growth ti = growth_outside growth i \<delta> current) \<delta> \<and>
-              tick_info.initialized ti = (\<delta> \<noteq> None) \<and>
-              (liquidity_gross i = 0 \<longleftrightarrow> \<delta> = None) \<and>
-              (liquidity_gross i = 0 \<longrightarrow> liquidity i = liquidity (i-1))
+              tick_info.initialized ti = (\<delta> \<noteq> None)
         \<close>
 
 definition Invt_Ticks :: \<open>tick \<Rightarrow> liquidity \<Rightarrow> liquidity \<Rightarrow> growths \<Rightarrow> opt_growths
@@ -90,6 +88,8 @@ definition Invt_Ticks :: \<open>tick \<Rightarrow> liquidity \<Rightarrow> liqui
   where \<open>Invt_Ticks current liquidity_gross liquidity growth \<delta> ticks
           \<longleftrightarrow> (\<forall>i. Invt_A_Tick i current liquidity_gross liquidity growth (\<delta> i) (ticks i))
               \<and> current \<in> {MIN_TICK-1..MAX_TICK}
+              \<and> (\<forall>k. liquidity_gross k = 0 \<longleftrightarrow> \<delta> k = None)
+              \<and> (\<forall>k. liquidity_gross k = 0 \<longrightarrow> liquidity k = liquidity (k-1))
               \<and> (\<forall>k. 0 \<le> liquidity_gross k) \<and> (\<forall>k. 0 \<le> liquidity k) \<and> (\<forall>k. 0 \<le> growth k)
               \<and> (\<forall>k. liquidity_gross k \<noteq> 0 \<longrightarrow> k \<in> {MIN_TICK..MAX_TICK})\<close>
 
@@ -103,8 +103,8 @@ locale Tick_resource =
   fixes RawTicks :: \<open>(fiction, ticks) \<phi>\<close>
 begin
 
-definition Ticks :: \<open>tick \<Rightarrow> opt_growths \<Rightarrow> (fiction, (liquidity \<times> liquidity \<times> growths)) \<phi>\<close>
-  where [\<phi>defs]: \<open>Ticks current \<delta> x = (case x of (Lg, liquidity, growth) \<Rightarrow>
+definition Ticks :: \<open>(fiction, (liquidity \<times> liquidity \<times> growths \<times> tick \<times> opt_growths)) \<phi>\<close>
+  where [\<phi>defs]: \<open>Ticks x = (case x of (Lg, liquidity, growth, current, \<delta>) \<Rightarrow>
                     ticks \<Ztypecolon> RawTicks \<s>\<u>\<b>\<j> ticks. Invt_Ticks current Lg liquidity growth \<delta> ticks)\<close>
 
 (*A problem of the automatic transformation rule is,
@@ -117,23 +117,23 @@ definition Ticks :: \<open>tick \<Rightarrow> opt_growths \<Rightarrow> (fiction
 
 lemma [\<phi>reason 1200]:
   \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> Invt_Ticks current Lg liquidity growth \<delta> ticks
-\<Longrightarrow> ticks \<Ztypecolon> RawTicks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, liquidity, growth) \<Ztypecolon> Ticks current \<delta>\<close>
-  \<medium_left_bracket> construct\<phi> \<open>(Lg, liquidity, growth) \<Ztypecolon> Ticks current \<delta>\<close> \<medium_right_bracket>. .
+\<Longrightarrow> ticks \<Ztypecolon> RawTicks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, liquidity, growth, current, \<delta>) \<Ztypecolon> Ticks\<close>
+  \<medium_left_bracket> construct\<phi> \<open>(Lg, liquidity, growth, current, \<delta>) \<Ztypecolon> Ticks\<close> \<medium_right_bracket>. .
 
 lemma [\<phi>reason 1200]:
   \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> Invt_Ticks current Lg liquidity growth \<delta> ticks
-\<Longrightarrow> ticks \<Ztypecolon> RawTicks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, liquidity, growth) \<Ztypecolon> Ticks current \<delta>
-    @action to (Ticks current \<delta>)\<close> \<medium_left_bracket> \<medium_right_bracket>. .
+\<Longrightarrow> ticks \<Ztypecolon> RawTicks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, liquidity, growth, current, \<delta>) \<Ztypecolon> Ticks
+    @action to Ticks\<close> \<medium_left_bracket> \<medium_right_bracket>. .
 
 lemma [\<phi>reason 3000, \<phi>inhabitance_rule]:
-  \<open> (Lg, liquidity, growth) \<Ztypecolon> Ticks current \<delta>
+  \<open> (Lg, liquidity, growth, current, \<delta>) \<Ztypecolon> Ticks
     \<i>\<m>\<p>\<l>\<i>\<e>\<s> ticks \<Ztypecolon> RawTicks \<s>\<u>\<b>\<j> ticks. Invt_Ticks current Lg liquidity growth \<delta> ticks
     @action to RawTicks\<close>
   \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>. .
 
 lemma grow_current_tick_\<phi>app:
   \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> 0 \<le> \<Delta>
-\<Longrightarrow> (Lg, L, g) \<Ztypecolon> Ticks i \<delta> \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, L, g(i := g i + \<Delta>)) \<Ztypecolon> Ticks i \<delta> \<close>
+\<Longrightarrow> (Lg, L, g, i, \<delta>) \<Ztypecolon> Ticks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, L, g(i := g i + \<Delta>), i, \<delta>) \<Ztypecolon> Ticks \<close>
   \<medium_left_bracket> to \<open>RawTicks\<close> \<medium_right_bracket>
     using \<phi> apply (auto simp add: Invt_Ticks_def Invt_A_Tick_def growth_outside_def)
     apply presburger apply (cases \<open>g i\<close>; cases \<Delta>; simp add: zero_prod_def less_eq_prod_def)
@@ -294,9 +294,9 @@ proc getFeeGrowthInside:
     and    \<open>lower < upper\<close>
   premises \<open>global_fee0 = growth.fee0 (gSum growth)\<close> (*global_fee0 is the sum of all the growth at every ticks*)
     and    \<open>global_fee1 = growth.fee1 (gSum growth)\<close>
-  input \<open>(Lg, liq, growth) \<Ztypecolon> Ticks current \<delta> \<heavy_comma>
+  input \<open>(Lg, liq, growth, current, \<delta>) \<Ztypecolon> Ticks \<heavy_comma>
           lower \<Ztypecolon> \<v>\<a>\<l> Tick \<heavy_comma> upper \<Ztypecolon> \<v>\<a>\<l> Tick \<heavy_comma> current \<Ztypecolon> \<v>\<a>\<l> Tick \<heavy_comma> global_fee0 \<Ztypecolon> \<v>\<a>\<l> \<real> \<heavy_comma> global_fee1 \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
-  output \<open>(Lg, liq, growth) \<Ztypecolon> Ticks current \<delta> \<heavy_comma>
+  output \<open>(Lg, liq, growth, current, \<delta>) \<Ztypecolon> Ticks \<heavy_comma>
           growth.fee0 (sum growth {lower..<upper} - the (\<delta> lower) + the (\<delta> upper)) \<Ztypecolon> \<v>\<a>\<l> \<real> \<heavy_comma>
           growth.fee1 (sum growth {lower..<upper} - the (\<delta> lower) + the (\<delta> upper)) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   is [routine_basic]
@@ -304,8 +304,8 @@ proc getFeeGrowthInside:
 
     obtain \<delta>_lower \<delta>_upper where \<delta>_lower[simp]: \<open>\<delta> lower = Some \<delta>_lower\<close>
                             and \<delta>_upper[simp]: \<open>\<delta> upper = Some \<delta>_upper\<close>
-      by (metis Invt_Ticks_initialization not_None_eq not_less_iff_gr_or_eq the_\<phi>(2) the_\<phi>(3) the_\<phi>lemmata(4))
-    
+      by (metis Invt_Ticks_initialization not_less_iff_gr_or_eq option.exhaust the_\<phi>(2) the_\<phi>(3) the_\<phi>lemmata(7))
+
     note lower_simps[simp] =
           \<open>Invt_Ticks current Lg liq growth \<delta> ticks\<close>[unfolded Invt_Ticks_def Invt_A_Tick_def
                   growth_outside_def, THEN conjunct1, THEN spec[where x=lower], simplified]
@@ -351,9 +351,9 @@ proc tick_cross:
 (*    and    \<open>sec_per_liq = growth.secondsPerLiquidity (gSum growth)\<close>
     and    \<open>tick_cumu = growth.tickCumulative (gSum growth)\<close>
     and    \<open>time = growth.seconds (gSum growth)\<close>*)
-  input  \<open>(Lg, liq, growth) \<Ztypecolon> Ticks j \<delta> \<heavy_comma> i \<Ztypecolon> \<v>\<a>\<l> Tick \<heavy_comma> fee0 \<Ztypecolon> \<v>\<a>\<l> \<real> \<heavy_comma> fee1 \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
+  input  \<open>(Lg, liq, growth, j, \<delta>) \<Ztypecolon> Ticks \<heavy_comma> i \<Ztypecolon> \<v>\<a>\<l> Tick \<heavy_comma> fee0 \<Ztypecolon> \<v>\<a>\<l> \<real> \<heavy_comma> fee1 \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
         (* sec_per_liq \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> tick_cumu \<Ztypecolon> \<v>\<a>\<l> \<int> \<heavy_comma> time \<Ztypecolon> \<v>\<a>\<l> \<int> *)
-  output \<open>(Lg, liq, growth) \<Ztypecolon> Ticks (if j < i then i else i - 1) \<delta>\<heavy_comma> liq i - liq (i - 1) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
+  output \<open>(Lg, liq, growth, (if j < i then i else i - 1), \<delta>) \<Ztypecolon> Ticks\<heavy_comma> liq i - liq (i - 1) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   is [routine]
   \<medium_left_bracket> to \<open>RawTicks\<close> \<exists>ticks
   obtain fee0' fee1' (*spl' tc' time'*) liqG' liqN' init'
@@ -383,12 +383,12 @@ proc tick_cross:
     apply (meson gSum_subtract1 linorder_not_le nle_le zle_diff1_eq)
     apply (smt (verit, ccfv_SIG) growth_outside_shift_mono option.pred_inject(1) option.pred_inject(2) th3 the_\<phi>(3))
     apply (meson linorder_not_le zle_diff1_eq)
-    apply (metis \<open>liquidityGross (ticks i) = Lg i \<and> liquidityNet (ticks i) = liq i - liq (i - 1) \<and> pred_option (\<lambda>\<delta>. tick_info.growth (ticks i) = growth_outside growth i \<delta> j) (\<delta> i) \<and> tick_info.initialized (ticks i) = (\<delta> i \<noteq> None) \<and> (Lg i = 0) = (\<delta> i = None) \<and> (Lg i = 0 \<longrightarrow> liq i = liq (i - 1))\<close> option.pred_inject(1))
+    apply (metis (full_types) option.pred_inject(1) th3)
     apply (metis order_less_irrefl th3 the_\<phi>(2))
-    apply (meson atLeastAtMost_iff the_\<phi>lemmata(1))
-    apply (metis \<open>liquidityGross (ticks i) = Lg i \<and> liquidityNet (ticks i) = liq i - liq (i - 1) \<and> pred_option (\<lambda>\<delta>. tick_info.growth (ticks i) = growth_outside growth i \<delta> j) (\<delta> i) \<and> tick_info.initialized (ticks i) = (\<delta> i \<noteq> None) \<and> (Lg i = 0) = (\<delta> i = None) \<and> (Lg i = 0 \<longrightarrow> liq i = liq (i - 1))\<close> not_less_iff_gr_or_eq the_\<phi>(2))
+    using the_\<phi>lemmata(2) apply blast
+    apply (metis less_numeral_extra(3) th2 the_\<phi>(2))
     apply (metis order_less_irrefl th3 the_\<phi>(2))
-    by (metis order_less_irrefl th3 the_\<phi>(2)) .
+    using the_\<phi>lemmata(1) by linarith .
 
 end
 

@@ -48,6 +48,66 @@ lemma swap_step_next_price_Le_0:
   apply (smt (verit) divide_pos_pos)
   by (smt (verit, ccfv_SIG) nonzero_mult_div_cancel_left pos_divide_le_eq)
 
+lemma swap_step_next_price_LE_price:
+  \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
+\<Longrightarrow> price_target \<le> price
+\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> next_price \<le> price\<close>
+  unfolding swap_step_def Let_def
+  apply (auto simp add: min_def max_def)
+     apply (smt (verit) divide_divide_eq_right nonzero_mult_div_cancel_left zero_le_mult_iff)
+  subgoal premises prems proof -
+    have x1: \<open>0 \<le> amount_remain * (1 - feePips)\<close>
+      using prems(12) prems(9) by auto
+    then show ?thesis
+      by (smt (verit, del_insts) divide_eq_0_iff mult.commute pos_divide_le_eq prems(1) prems(3) prems(5))
+  qed
+  apply (smt (verit) minus_divide_left mult.commute mult_eq_0_iff mult_pos_pos pos_less_minus_divide_eq)
+  by (simp add: divide_nonpos_pos)
+
+lemma swap_step_price_target_LE_next_price:
+  \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
+\<Longrightarrow> price_target \<le> price
+\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> price_target \<le> next_price\<close>
+  unfolding swap_step_def Let_def
+  apply (auto simp add: min_def max_def)
+  apply (smt (verit) divide_divide_eq_right nonzero_mult_div_cancel_left zero_le_mult_iff)
+  subgoal premises prems proof -
+    have t1: \<open>0 \<le> amount_remain * (1 - feePips)\<close>
+      using prems(12) prems(9) by force
+    then show ?thesis
+      by (smt (verit, best) divide_pos_pos mult.commute pos_le_divide_eq prems(1) prems(10) prems(13) prems(3) prems(5))
+  qed
+  apply (smt (verit) mult.commute pos_divide_le_eq)
+  by (smt (verit, best) frac_le mult_less_0_iff)
+
+lemma swap_step_price_LE_next_price:
+  \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
+\<Longrightarrow> price < price_target
+\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> price \<le> next_price\<close>
+  unfolding swap_step_def Let_def
+  apply (auto simp add: min_def max_def not_le)
+  subgoal premises prems proof -
+    have t1: \<open>0 \<le> L / price + amount_remain\<close>
+      by (smt (verit, best) divide_nonneg_pos prems(1) prems(10) prems(2) prems(5))
+    then show ?thesis
+      by (smt (verit, best) divide_le_0_iff mult.commute pos_le_divide_eq prems(1) prems(10) prems(11) prems(2))
+  qed .
+
+lemma swap_step_next_price_LE_price_target:
+  \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
+\<Longrightarrow> price < price_target
+\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> next_price \<le> price_target\<close>
+  unfolding swap_step_def Let_def
+  apply (auto simp add: min_def max_def not_le)
+  apply (smt (verit, best) frac_less2)
+  apply (metis add.commute divide_divide_eq_right dual_order.order_iff_strict frac_less2 less_diff_eq linorder_not_le nonzero_mult_div_cancel_left order_le_less_trans)
+  using divide_right_mono apply fastforce
+  by (smt (verit, best) mult_less_0_iff)
+
 lemma swap_step_amountIn_Le_0:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
 \<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
