@@ -89,7 +89,9 @@ qed
 text \<open>As we are not planning verifying the numeric calculation and its precision (in a short term),
   we declare them directly as assumed axioms.\<close>
 
-debt_axiomatization getSqrtRatioAtTick :: \<open>(VAL,VAL) proc'\<close>
+debt_axiomatization
+    getSqrtRatioAtTick :: \<open>(VAL,VAL) proc'\<close> and
+    getTickAtSqrtRatio :: \<open>(VAL,VAL) proc'\<close>
   where getSqrtRatioAtTick_\<phi>app:
             \<open>\<p>\<r>\<o>\<c> getSqrtRatioAtTick v \<lbrace> t \<Ztypecolon> \<v>\<a>\<l>[v] Tick \<longmapsto> price_of t \<Ztypecolon> \<v>\<a>\<l> \<real> \<rbrace>\<close>
     and getTickAtSqrtRatio_\<phi>app:
@@ -123,6 +125,16 @@ lemma
 lemma less_MAX_PRICE_less_MAX_TICK:
   \<open>0 < p \<Longrightarrow> p < MAX_PRICE \<Longrightarrow> tick_of_price p < MAX_TICK\<close>
   using price_of_smono price_of_tick by fastforce
+
+lemma tick_of_price_LT_MAX_price_LT_MAX:
+  \<open>tick_of_price p < MAX_TICK \<Longrightarrow> p < MAX_PRICE\<close>
+  by (smt (verit, ccfv_SIG) price_of_L0 price_of_smono price_of_tick)
+
+(*
+lemma less_MAX_PRICE_less_MAX_TICK:
+  \<open>0 < p \<Longrightarrow> MIN_PRICE < p \<Longrightarrow> MIN_TICK \<le> tick_of_price p\<close>
+  by (smt (verit, del_insts) price_of_smono price_of_tick) *)
+  
 
 
 end

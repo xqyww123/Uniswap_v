@@ -271,6 +271,16 @@ lemma growth_outside_shift_mono:
 \<Longrightarrow> growth_outside growth i \<delta> j = growth_outside growth i \<delta> k\<close>
   unfolding growth_outside_def by auto
 
+abbreviation \<open>next_initialized Lg i j \<equiv> (\<forall>k. i < k \<and> k < j \<longrightarrow> Lg k = 0)\<close>
+
+lemma (in Tick_resource) shift_current_tick_\<phi>app:
+  \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> j \<in> {MIN_TICK-1..MAX_TICK}
+\<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> (if j \<le> i then next_initialized Lg j (i+1) else next_initialized Lg i (j+1))
+\<Longrightarrow> (Lg, L, g, i, \<delta>) \<Ztypecolon> Ticks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, L, g, j, \<delta>) \<Ztypecolon> Ticks \<close>
+  \<medium_left_bracket> to \<open>RawTicks\<close> \<medium_right_bracket>
+    using \<phi> by (auto simp add: Invt_Ticks_def Invt_A_Tick_def,
+                smt (verit) Invt_A_Tick_def Invt_Ticks_def growth_outside_def option.pred_inject(1) option.pred_inject(2) the_\<phi>lemmata) .
+
 lemma sum_update:
   \<open> finite S
 \<Longrightarrow> j \<in> S
@@ -282,8 +292,6 @@ lemma gSum_update[simp]:
 \<Longrightarrow> gSum (\<lambda>k. if k = j then f j + \<delta> else f k) = gSum f + \<delta>\<close>
   using sum_update[where S=\<open>{MIN_TICK-1..MAX_TICK}\<close>, simplified] by auto
 
-
-abbreviation \<open>next_initialized Lg i j \<equiv> (\<forall>k. i < k \<and> k < j \<longrightarrow> Lg k = 0)\<close>
 
 
 
@@ -345,7 +353,7 @@ thm getFeeGrowthInside_\<phi>app
 
 proc tick_cross:
   premises \<open>0 < Lg i\<close>
-    and    \<open>if j < i then next_initialized Lg j i else next_initialized Lg (i-1) j\<close>
+    and    \<open>if i \<le> j then next_initialized Lg i (j+1) else next_initialized Lg j i\<close>
   premises \<open>fee0 = global_fee0_growth growth\<close> (*global_fee0 is the sum of all the growth at every ticks*)
     and    \<open>fee1 = global_fee1_growth growth\<close>
 (*    and    \<open>sec_per_liq = growth.secondsPerLiquidity (gSum growth)\<close>
@@ -353,7 +361,7 @@ proc tick_cross:
     and    \<open>time = growth.seconds (gSum growth)\<close>*)
   input  \<open>(Lg, liq, growth, j, \<delta>) \<Ztypecolon> Ticks \<heavy_comma> i \<Ztypecolon> \<v>\<a>\<l> Tick \<heavy_comma> fee0 \<Ztypecolon> \<v>\<a>\<l> \<real> \<heavy_comma> fee1 \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
         (* sec_per_liq \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> tick_cumu \<Ztypecolon> \<v>\<a>\<l> \<int> \<heavy_comma> time \<Ztypecolon> \<v>\<a>\<l> \<int> *)
-  output \<open>(Lg, liq, growth, (if j < i then i else i - 1), \<delta>) \<Ztypecolon> Ticks\<heavy_comma> liq i - liq (i - 1) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
+  output \<open>(Lg, liq, growth, (if i \<le> j then i - 1 else i), \<delta>) \<Ztypecolon> Ticks\<heavy_comma> liq i - liq (i - 1) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   is [routine]
   \<medium_left_bracket> to \<open>RawTicks\<close> \<exists>ticks
   obtain fee0' fee1' (*spl' tc' time'*) liqG' liqN' init'
@@ -379,16 +387,17 @@ proc tick_cross:
   \<medium_right_bracket> unfolding Invt_Ticks_def Invt_A_Tick_def
     using th2 th3[THEN spec[where x=i]]
     apply (auto)
-    apply (smt (verit, ccfv_SIG) growth_outside_shift_mono option.pred_inject(1) option.pred_inject(2) th3 the_\<phi>(3))
-    apply (meson gSum_subtract1 linorder_not_le nle_le zle_diff1_eq)
-    apply (smt (verit, ccfv_SIG) growth_outside_shift_mono option.pred_inject(1) option.pred_inject(2) th3 the_\<phi>(3))
-    apply (meson linorder_not_le zle_diff1_eq)
-    apply (metis (full_types) option.pred_inject(1) th3)
-    apply (metis order_less_irrefl th3 the_\<phi>(2))
-    using the_\<phi>lemmata(2) apply blast
+    apply force
+    apply (smt (verit, ccfv_SIG) growth_outside_def option.pred_inject(1) option.pred_inject(2) th3 the_\<phi>(3))
+    using the_\<phi>lemmata(1) apply linarith
+    apply (smt (verit, best) growth_outside_shift_mono option.pred_inject(1) option.pred_inject(2) th3 the_\<phi>(3))
     apply (metis less_numeral_extra(3) th2 the_\<phi>(2))
-    apply (metis order_less_irrefl th3 the_\<phi>(2))
-    using the_\<phi>lemmata(1) by linarith .
+    apply (metis less_numeral_extra(3) th3 the_\<phi>(2))
+    using the_\<phi>lemmata(1) apply linarith
+    apply (metis less_numeral_extra(3) th2 the_\<phi>(2))
+    apply (metis less_numeral_extra(3) th3 the_\<phi>(2))
+    by (metis order_less_irrefl th2 the_\<phi>(2)) .
+
 
 end
 

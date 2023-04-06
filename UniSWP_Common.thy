@@ -103,7 +103,7 @@ lemma [\<phi>reason 1200]:
   \<medium_left_bracket> construct\<phi> \<open>i \<Ztypecolon> Address\<close> \<medium_right_bracket>. .
 
 lemma [\<phi>reason 1200]:
-  \<open> i \<Ztypecolon> \<int> \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> Address @action to Tick\<close> \<medium_left_bracket> \<medium_right_bracket>. .
+  \<open> i \<Ztypecolon> \<int> \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> Address @action to Address\<close> \<medium_left_bracket> \<medium_right_bracket>. .
 
 lemma [\<phi>reason 1200]:
   \<open> \<t>\<h>\<r>\<e>\<s>\<h>\<o>\<l>\<d> 1

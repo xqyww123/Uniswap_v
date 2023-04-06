@@ -1,5 +1,5 @@
 theory Uniswap_SwapMath
-  imports Uniswap_SqrtPriceMath
+  imports Uniswap_SqrtPriceMath Uniswap_Tick_Math
 begin
 
 
@@ -25,6 +25,22 @@ definition swap_step :: \<open>real \<Rightarrow> real \<Rightarrow> real \<Righ
      in (next_price, amountIn, amountOut, fee)
 )\<close>
 
+(* In swap_step, amount_remain cannot be zero *)
+
+(* lemma
+  \<open> 0 < price1 \<and> 0 < price_target \<and> 0 < price_target0 \<and> 0 \<le> L \<and> 0 < \<gamma> \<and> \<gamma> < 1
+\<Longrightarrow> remain0 \<ge> 0
+\<Longrightarrow> price_target0 \<le> price0 \<and> price_target \<le> price_target0
+\<Longrightarrow> (price1, amt_in1, amt_out1, fee1) = swap_step price0 price_target0 L remain0 \<gamma>
+\<Longrightarrow> (price2, amt_in2, amt_out2, fee2) = swap_step price1 price_target L (remain0 - (amt_in1 + fee1)) \<gamma>
+\<Longrightarrow> (price3, amt_in3, amt_out3, fee3) = swap_step price0 price_target L remain0 \<gamma>
+\<Longrightarrow> price3 = price2 \<and> amt_in1 + amt_in2 = amt_in3 \<and> amt_out1 + amt_out2 = amt_out3 \<and> fee1 + fee2 = fee3\<close>
+  unfolding swap_step_def apply (auto simp add: min_def max_def)
+     apply (cases \<open>L = 0\<close>)
+      apply (simp add: Let_def)
+apply (simp add: Let_def)
+*)
+
 declare [[linarith_split_limit = 30]]
 
 lemma swap_step_fee_Le_0:
@@ -36,6 +52,85 @@ lemma swap_step_fee_Le_0:
   apply (smt (verit, ccfv_SIG) divide_nonpos_pos frac_le mult.commute mult_less_0_iff pos_divide_le_eq times_divide_eq_left)
   apply (smt (verit, del_insts) divide_cancel_left divide_divide_eq_right divide_nonneg_pos divide_pos_pos eq_divide_imp frac_le less_eq_real_def mult_less_0_iff mult_nonneg_nonneg nonzero_mult_divide_mult_cancel_left2 nonzero_mult_divide_mult_cancel_right nonzero_mult_divide_mult_cancel_right2 not_less_iff_gr_or_eq zero_less_mult_iff)
   by (simp add: frac_le)
+
+lemma price_inequaty:
+  \<open>0 < delta \<and> 0 < L \<and> 0 < price \<Longrightarrow> L / (L / price + delta) < price\<close> for L :: real
+  by (smt (verit, del_insts) divide_cancel_right divide_pos_pos nonzero_mult_div_cancel_left pos_divide_le_eq)
+
+lemma price_inequaty':
+  \<open>0 \<le> delta \<and> 0 < L \<and> 0 < price \<Longrightarrow> L / (L / price + delta) \<le> price\<close> for L :: real
+  by (smt (verit) divide_divide_eq_right nonzero_mult_div_cancel_left price_inequaty)
+
+lemma price_inequaty2:
+  \<open>0 < L / price + delta \<and> delta < 0 \<and> 0 < L \<and> 0 < price \<Longrightarrow> price < L / (L / price + delta)\<close> for L :: real
+  by (smt (verit) mult.commute pos_divide_le_eq)
+
+lemma price_inequaty2':
+  \<open>0 < L / price + delta \<and> delta \<le> 0 \<and> 0 < L \<and> 0 < price \<Longrightarrow> price \<le> L / (L / price + delta)\<close> for L :: real
+  by (smt (verit) ln_div ln_le_cancel_iff zero_less_divide_iff)
+  
+
+lemma swap_step_next_price_Le:
+  \<open>0 < min_price \<and> min_price \<le> price \<and> min_price < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
+\<Longrightarrow> amount_remain \<noteq> 0
+\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> min_price < next_price\<close>
+  unfolding swap_step_def Let_def
+  apply (cases \<open>price >= price_target\<close>; auto simp add: min_def max_def)
+  apply (smt (verit, ccfv_SIG) divide_divide_eq_right mult_eq_0_iff nonzero_mult_div_cancel_left times_divide_eq_left zero_less_mult_iff)
+  subgoal premises prems proof -
+    have t1: \<open>0 < amount_remain * (1 - feePips)\<close>
+      using prems(1) prems(11) prems(14) by fastforce
+    thm prems
+    have t2: \<open>L / price + amount_remain * (1 - feePips) \<le> L / price_target\<close>
+      using prems(12) by force
+    have t3: \<open>0 < L / price + amount_remain * (1 - feePips)\<close>
+      by (smt (verit, best) divide_nonneg_nonneg prems(2) prems(3) prems(6) prems(9) t1)
+    have t4: \<open>price_target \<le> L / (L / price + amount_remain * (1 - feePips))\<close>
+      by (metis (no_types, opaque_lifting) divide_pos_pos linorder_linear linorder_not_less mult.commute order_antisym order_less_le_trans pos_le_divide_eq prems(15) prems(9) t2 t3)
+    show ?thesis
+      using prems(6) t4 by fastforce
+  qed
+  apply (smt (verit, ccfv_threshold) mult.commute pos_divide_le_eq)
+  apply (smt (verit, best) frac_less2 split_mult_neg_le)
+     apply (smt (verit) divide_pos_pos mult_pos_pos)
+  apply (smt (verit, ccfv_threshold) price_inequaty2 zero_less_divide_iff)
+  apply (smt (verit, ccfv_threshold) divide_pos_pos mult_pos_pos)
+  by (smt (verit, del_insts) mult_less_0_iff)
+
+lemma swap_step_next_price_Le_MIN_PRICE:
+  \<open>MIN_PRICE \<le> price \<and> MIN_PRICE < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
+\<Longrightarrow> amount_remain \<noteq> 0
+\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> MIN_PRICE < next_price\<close>
+  using price_of_L0 swap_step_next_price_Le by blast
+
+lemma swap_step_next_price_Gt:
+  \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
+\<Longrightarrow> price \<le> max_price \<and> price_target < max_price
+\<Longrightarrow> amount_remain \<noteq> 0
+\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> next_price < max_price\<close>
+  unfolding swap_step_def Let_def
+  apply (cases \<open>price >= price_target\<close>; auto simp add: min_def max_def)
+  apply (smt (verit, del_insts) mult_nonneg_nonpos)
+  apply (smt (verit, del_insts) mult_pos_pos price_inequaty)
+  apply (smt (verit, best) divide_neg_pos)
+  apply (smt (verit, del_insts) divide_neg_pos)
+  apply (smt (verit, best) frac_le)
+  apply (metis add.commute diff_less_eq divide_divide_eq_right frac_less2 leI nonzero_mult_div_cancel_left not_less_iff_gr_or_eq order_le_less_trans)
+  apply (smt (verit, best) nonzero_mult_div_cancel_left pos_divide_le_eq)
+  by (smt (verit, ccfv_SIG) mult_less_0_iff)
+
+lemma swap_step_next_price_Gt_MAX:
+  \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
+\<Longrightarrow> price \<le> MAX_PRICE \<and> price_target < MAX_PRICE
+\<Longrightarrow> amount_remain \<noteq> 0
+\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> next_price < MAX_PRICE\<close>
+  using swap_step_next_price_Gt .
+
+
 
 lemma swap_step_next_price_Le_0:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
