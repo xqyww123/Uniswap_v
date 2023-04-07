@@ -2,199 +2,340 @@ theory Uniswap_SwapMath
   imports Uniswap_SqrtPriceMath Uniswap_Tick_Math
 begin
 
-definition reserve_change_in_a_tick :: \<open>real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<times> real\<close>
-  where \<open>reserve_change_in_a_tick L price0 price1
+definition reserve_change_in_a_step :: \<open>real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<times> real\<close>
+  where \<open>reserve_change_in_a_step L price0 price1
     = (L / price1 - L / price0 \<comment> \<open>reserve change in token0\<close>,
        L * (price1 - price0) \<comment> \<open>reserve change in token1\<close>)\<close>
 
+lemma reserve_change_in_a_tick_0:
+  \<open>reserve_change_in_a_step L price price = 0\<close>
+  unfolding reserve_change_in_a_step_def by (simp add: zero_prod_def)
+
 lemma reserve_change_in_a_tick_sum:
   \<open> price0 \<le> price1 \<and> price1 \<le> price2
-\<Longrightarrow> reserve_change_in_a_tick L price0 price1 + reserve_change_in_a_tick L price1 price2 = reserve_change_in_a_tick L price0 price2 \<close>
-  unfolding reserve_change_in_a_tick_def
+\<Longrightarrow> reserve_change_in_a_step L price0 price1 + reserve_change_in_a_step L price1 price2 = reserve_change_in_a_step L price0 price2 \<close>
+  unfolding reserve_change_in_a_step_def
   by (simp add: right_diff_distrib)
 
 lemma reserve_change_in_a_tick_sum_rev:
   \<open> price2 \<le> price1 \<and> price1 \<le> price0
-\<Longrightarrow> reserve_change_in_a_tick L price0 price1 + reserve_change_in_a_tick L price1 price2 = reserve_change_in_a_tick L price0 price2 \<close>
-  unfolding reserve_change_in_a_tick_def
+\<Longrightarrow> reserve_change_in_a_step L price0 price1 + reserve_change_in_a_step L price1 price2 = reserve_change_in_a_step L price0 price2 \<close>
+  unfolding reserve_change_in_a_step_def
   by (simp add: right_diff_distrib)
 
-definition In_a_tick :: \<open>real \<Rightarrow> real \<Rightarrow> bool\<close> \<comment> \<open>left close, right open\<close>
-  where \<open>In_a_tick lower upper \<longleftrightarrow> 0 < lower \<and> lower \<le> upper \<and> upper \<le> price_of (tick_of_price lower + 1)\<close>
-
-lemma Having_same_tick_In_a_tick:
-  \<open> 0 < l \<and> l \<le> u
-\<Longrightarrow> tick_of_price l = tick_of_price u
-\<Longrightarrow> In_a_tick l u\<close>
-  unfolding In_a_tick_def
-  by (smt (verit, ccfv_SIG) price_of_tick)
-
-lemma In_a_tick_alt:
-  \<open>In_a_tick l u \<longleftrightarrow> 0 < l \<and> l \<le> u \<and> (tick_of_price l = tick_of_price u \<or> u = price_of (tick_of_price l + 1))\<close>
-  unfolding In_a_tick_def
-  by (smt (z3) price_of_smono price_of_tick)
-
-lemma In_a_tick_triangle:
-  \<open>In_a_tick l m \<Longrightarrow> In_a_tick l u \<Longrightarrow> m \<le> u \<Longrightarrow> In_a_tick m u\<close>
-  unfolding In_a_tick_alt
-  by (smt (verit, best) In_a_tick_alt tick_of_price_LE_mono)
-
-primrec Is_partition' :: \<open>real \<Rightarrow> real list \<Rightarrow> bool\<close>
-  where \<open>Is_partition' low [] \<longleftrightarrow> True\<close> |
-        \<open>Is_partition' low (h#l) \<longleftrightarrow> In_a_tick low h \<and> Is_partition' h l\<close>
-
-lemma Is_partition_last[simp]:
-  \<open> ps2 \<noteq> []
-\<Longrightarrow> Is_partition' low ps2
-\<Longrightarrow> Is_partition' low (ps2 @ [up]) \<longleftrightarrow> In_a_tick (last ps2) up\<close>
-  by (induct ps2 arbitrary: low; simp)
-
-lemma Is_partition'_cat:
-  \<open> ps1 \<noteq> []
-\<Longrightarrow> Is_partition' low ps1
-\<Longrightarrow> Is_partition' (last ps1) ps2
-\<Longrightarrow> Is_partition' low (ps1 @ ps2)\<close>
-  by (induct ps2 arbitrary: ps1; simp)
-     (metis Is_partition_last append.assoc append_Cons append_Nil snoc_eq_iff_butlast)
-
-lemma Is_partition'_ordered_chain:
-  \<open>Is_partition' l ps \<Longrightarrow> \<forall>i < length ps. l \<le> (ps ! i)\<close>
-  apply (induct ps arbitrary: l; simp add: In_a_tick_def)
-  using less_Suc_eq_0_disj by fastforce
-
-lemma Is_partition'_le_last:
-  \<open>ps \<noteq> [] \<Longrightarrow> Is_partition' l ps \<Longrightarrow> l \<le> last ps\<close>
-  by (simp add: Is_partition'_ordered_chain last_conv_nth)
 
 
-definition \<open>Is_partition low up ps \<longleftrightarrow> ps \<noteq> [] \<and> last ps = up \<and> Is_partition' low ps\<close>
+definition Const_Interval :: \<open>(real \<Rightarrow> 'b) \<Rightarrow> real \<Rightarrow> real \<Rightarrow> bool\<close> \<comment> \<open>left close, right open\<close>
+      \<comment> \<open>An interval where the liquidity is constant\<close>
+  where \<open>Const_Interval f l u \<longleftrightarrow> l \<le> u \<and> (\<forall>k. l < k \<and> k < u \<longrightarrow> f k = f l)\<close>
 
-lemma Is_partition_impl_0_LT_low:
-  \<open>Is_partition l u ps \<Longrightarrow> 0 < l\<close>
-  unfolding Is_partition_def
-  by (metis In_a_tick_def Is_partition'.simps(2) neq_Nil_conv) 
+lemma Const_Interval_LE:
+  \<open>Const_Interval f l u \<Longrightarrow> l \<le> u\<close>
+  unfolding Const_Interval_def by auto
+
+lemma Const_Interval_eq_lower:
+  \<open>Const_Interval f l u \<Longrightarrow> l < k \<and> k < u \<Longrightarrow> f k = f l\<close>
+  unfolding Const_Interval_def by auto
+
+lemma Const_Interval_triangle:
+  \<open>Const_Interval f l m \<Longrightarrow> Const_Interval f l u \<Longrightarrow> m \<le> u \<Longrightarrow> Const_Interval f m u\<close>
+  by (smt (verit, del_insts) Const_Interval_def)
+
+
+primrec Is_partition :: \<open>(real \<Rightarrow> 'b) \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real list \<Rightarrow> bool\<close>
+  where \<open>Is_partition f l u [] \<longleftrightarrow> Const_Interval f l u\<close> |
+        \<open>Is_partition f l u (h#r) \<longleftrightarrow> Const_Interval f l h \<and> Is_partition f h u r\<close>
+
+definition KeyPoint
+  where \<open>KeyPoint f l k \<longleftrightarrow> Const_Interval f l k \<and> f l \<noteq> f k\<close>
+
+primrec Is_key_partition :: \<open>(real \<Rightarrow> 'b) \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real list \<Rightarrow> bool\<close>
+  where \<open>Is_key_partition f l u [] \<longleftrightarrow> Const_Interval f l u\<close> |
+        \<open>Is_key_partition f l u (h#r) \<longleftrightarrow> Const_Interval f l h \<and> KeyPoint f l h \<and> h < u \<and> Is_key_partition f h u r\<close>
+
+lemma KeyPoint_exist:
+  \<open>Is_partition f l u ps \<Longrightarrow> \<not> Const_Interval f l u \<Longrightarrow> Ex (KeyPoint f l)\<close>
+  apply (induct ps arbitrary: l; simp)
+  by (smt (verit, del_insts) Const_Interval_def KeyPoint_def)
+
+lemma xx1:
+  \<open>l \<le> u \<Longrightarrow> u \<le> u' \<Longrightarrow> \<not> Const_Interval f l u \<Longrightarrow> \<not> Const_Interval f l u'\<close>
+  by (meson Const_Interval_def dual_order.strict_trans1)
+
+lemma KeyPoint_uniq:
+  \<open>KeyPoint f l k1 \<Longrightarrow> KeyPoint f l k2 \<Longrightarrow> k1 = k2\<close>
+  unfolding KeyPoint_def
+  by (smt (verit) Const_Interval_LE Const_Interval_eq_lower) 
+
+lemma KeyPoint_uniq':
+  \<open>Const_Interval f l1 l2 \<Longrightarrow> KeyPoint f l1 k1 \<Longrightarrow> KeyPoint f l2 k2 \<Longrightarrow> k1 = k2 \<or> k1 = l2\<close>
+  by (smt (verit, ccfv_threshold) Const_Interval_LE Const_Interval_eq_lower KeyPoint_def)
+
+lemma KeyPoint_max:
+  \<open>Const_Interval f l u \<Longrightarrow> KeyPoint f l k \<Longrightarrow> u \<le> k\<close>
+  by (smt (verit, ccfv_threshold) Const_Interval_LE Const_Interval_eq_lower KeyPoint_def)
+
+lemma Const_Interval_key_point:
+  \<open>Const_Interval f l u \<and> KeyPoint f l k \<Longrightarrow> Const_Interval f u k\<close>
+  by (smt (verit, best) Const_Interval_def KeyPoint_def)
+
+lemma KeyPoint_in_partition:
+  \<open> \<not> Const_Interval f l u
+\<Longrightarrow> Is_partition f l u ps
+\<Longrightarrow> KeyPoint f l k
+\<Longrightarrow> List.member ps k\<close>
+  apply (induct ps arbitrary: l; simp add: KeyPoint_def)
+  by (smt (verit, best) Const_Interval_def member_rec(1))
+
+
+
+(* lemma Is_partition_last[simp]:
+  \<open> Is_partition f l ps2
+\<Longrightarrow> Is_partition f l (ps2 @ [u]) \<longleftrightarrow> Const_Interval f (last ps2) u\<close>
+  by (induct ps2 arbitrary: l; simp) *)
+
+lemma Is_partition_imp_LE:
+  \<open>Is_partition f low up ps \<Longrightarrow> low \<le> up\<close>
+  apply (induct ps arbitrary: low up; simp)
+  apply (simp add: Const_Interval_LE)
+  using Const_Interval_LE order_trans by blast
 
 lemma Is_partition_cat:
-  \<open> Is_partition low mid ps1
-\<Longrightarrow> Is_partition mid up ps2
-\<Longrightarrow> Is_partition low up (ps1 @ ps2) \<close>
+  \<open> Is_partition f l m ps1
+\<Longrightarrow> Is_partition f m u ps2
+\<Longrightarrow> Is_partition f l u (ps1 @ [m] @ ps2)\<close>
+  by (induct ps1 arbitrary: ps2 m l; simp)
+     
+
+lemma Is_partition_ordered_chain:
+  \<open>Is_partition f l u ps \<Longrightarrow> \<forall>i < length ps. l \<le> (ps ! i)\<close>
+  apply (induct ps arbitrary: l; simp add: Const_Interval_def)
+  using less_Suc_eq_0_disj by fastforce
+
+lemma Is_partition_le_last:
+  \<open>Is_partition f l u ps \<Longrightarrow> l \<le> u\<close>
+  apply (induct ps arbitrary: l; simp add: Const_Interval_def)
+  using order_trans by blast
+
+
+lemma Is_partition_split:
+  \<open> Is_partition f l u ps
+\<Longrightarrow> List.member ps k
+\<Longrightarrow> (\<exists>ps1 ps2. ps = ps1 @ [k] @ ps2 \<and> Is_partition f l k ps1 \<and> Is_partition f k u ps2)\<close>
+  apply (induct ps arbitrary: l; simp)
+  using member_rec(2) apply force
+  by (smt (verit, best) Is_partition.simps(1) Is_partition.simps(2) append_eq_Cons_conv member_rec(1))
+
+
+lemma Key_partition_exists:
+  \<open> Is_partition f l u ps
+\<Longrightarrow> Ex (Is_key_partition f l u)\<close>
+  apply (induct ps arbitrary: l; simp)
+  using Is_key_partition.simps(1) apply blast
+  subgoal for a ps l
+    apply (cases \<open>KeyPoint f l a\<close>)
+     apply (metis Is_key_partition.simps(1) Is_key_partition.simps(2) Is_partition_imp_LE less_eq_real_def)
+    apply (cases \<open>Const_Interval f l u\<close>)
+      using Is_key_partition.simps(1) apply blast
+    subgoal premises prems
+    proof -
+      have t1: \<open>Is_partition f l u (a # ps)\<close> by (simp add: prems(2))
+    obtain kl where kl: \<open>KeyPoint f l kl\<close>
+      using KeyPoint_exist prems(4) t1 by blast
+    obtain ps' where ps': \<open>Is_key_partition f a u ps'\<close>
+      using prems(1) prems(2) by blast
+    show ?thesis
+    proof (cases ps')
+      case Nil
+      then show ?thesis
+        by (smt (verit, del_insts) Is_key_partition.simps(1) Is_partition_imp_LE KeyPoint_def KeyPoint_max kl prems(2) prems(3) ps' t1 xx1)
+    next
+      case (Cons a list)
+      then show ?thesis
+        by (metis Const_Interval_key_point Is_key_partition.simps(2) KeyPoint_def KeyPoint_uniq kl prems(2) prems(3) ps')
+    qed
+  qed . .
+
+lemma Key_partition_uniq:
+  \<open>Is_key_partition f l u ps1 \<Longrightarrow> Is_key_partition f l u ps2 \<Longrightarrow> ps1 = ps2\<close>
+  apply (induct ps1 arbitrary: ps2 l u; simp)
+  apply (metis Is_key_partition.simps(2) KeyPoint_max linorder_not_le neq_Nil_conv)
+  apply (case_tac ps2; simp)
+  apply (meson KeyPoint_max less_le_not_le)
+  using KeyPoint_uniq by blast
+
+lemma Key_partition_split:
+  \<open> Is_key_partition f l u ps
+\<Longrightarrow> List.member ps k
+\<Longrightarrow> (\<exists>ps1 ps2. ps = ps1 @ [k] @ ps2 \<and> Is_key_partition f l k ps1 \<and> Is_key_partition f k u ps2)\<close>
+  apply (induct ps arbitrary: l; simp)
+  using member_rec(2) apply force
+  apply (auto simp add: member_rec)
+   apply (metis Is_key_partition.simps(1) append.left_neutral)
+  subgoal premises prems for a ps l proof -
+    obtain ps1 ps2 where ps12: \<open>ps = ps1 @ k # ps2 \<and> Is_key_partition f a k ps1 \<and> Is_key_partition f k u ps2\<close>
+      using prems(1) prems(5) by presburger
+    have t1: \<open>Is_key_partition f l k (a # ps1)\<close> apply simp
+      by (metis Const_Interval_LE Is_key_partition.simps(2) KeyPoint_def append_Nil dual_order.order_iff_strict dual_order.strict_trans1 list.inject neq_Nil_conv prems(3) prems(5) ps12)
+    show ?thesis
+      by (metis append_Cons ps12 t1)
+  qed .
+
+(*
+lemma
+  \<open> Is_partition f l u ps
+\<Longrightarrow> Is_key_partition f l u kps
+\<Longrightarrow> length kps \<le> length ps\<close>
+  apply (induct kps arbitrary: ps l; simp) *)
+
+
+
+primrec partition_intergral :: \<open>('b \<Rightarrow> real \<Rightarrow> real \<Rightarrow> 'a::monoid_add) \<Rightarrow> (real \<Rightarrow> 'b) \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real list \<Rightarrow> 'a\<close>
+  where \<open>partition_intergral S L low up [] = S (L low) low up\<close> |
+        \<open>partition_intergral S L low up (h#l) = S (L low) low h + partition_intergral S L h up l\<close>
+
+
+lemma partition_intergral_add:
+  \<open> (\<forall>C l m u. l \<le> m \<and> m \<le> u \<longrightarrow> S C l m + S C m u = S C l u)
+\<Longrightarrow> (\<forall>C a. S C a a = 0)
+\<Longrightarrow> Is_partition L l m A
+\<Longrightarrow> Is_partition L m u B
+\<Longrightarrow> partition_intergral S L l m A + partition_intergral S L m u B = partition_intergral S L l u (A@[m]@B)\<close>
+  apply (induct A arbitrary: l; simp)
+  by (simp add: add.assoc)
+  
+
+lemma partition_intergral_const:
+  \<open> (\<forall>C l m u. l \<le> m \<and> m \<le> u \<longrightarrow> S C l m + S C m u = S C l u)
+\<Longrightarrow> (\<forall>C a. S C a a = 0)
+\<Longrightarrow> Const_Interval L l u
+\<Longrightarrow> Is_partition L l u A
+\<Longrightarrow> partition_intergral S L l u A = S (L l) l u\<close>
+  apply (induct A arbitrary: l; simp)
+  by (smt (verit) Const_Interval_def Is_partition_imp_LE)
+  
+
+(*
+lemma Is_partition_expand:
+  \<open>Is_partition L l u (a # list) \<longleftrightarrow> 
+      list = [] \<and> a = u \<and> Const_Interval L l u \<or> Is_partition L a u list \<and> Const_Interval L l a\<close>
   unfolding Is_partition_def
-  by (auto simp add: Is_partition'_cat)
+  by auto
+
+lemma Is_partition_not_nil:
+  \<open>\<not> Is_partition L l u []\<close>
+  unfolding Is_partition_def by simp 
+
+term List.member
 
 lemma
-  \<open> tick_of_price l \<le> tick_of_price u
-\<Longrightarrow> Is_partition l u ps
-\<Longrightarrow> \<exists>ps1 ps2. ps = ps1 @ ps2 \<and> Is_partition l (price_of (tick_of_price l+1)) ps1 \<and> Is_partition (price_of (tick_of_price l+1)) u ps2\<close>
-  unfolding Is_partition_def
-  apply (induct ps arbitrary: l )
-  apply blast
-  apply (case_tac \<open>ps = []\<close>; clarsimp)
-  prefer 2
-proof -
-  fix a :: real and psa :: "real list" and la :: real
-  assume a1: "\<And>l. \<lbrakk>tick_of_price l \<le> tick_of_price (last psa); Is_partition' l psa\<rbrakk> \<Longrightarrow> \<exists>ps1 ps2. psa = ps1 @ ps2 \<and> ps1 \<noteq> [] \<and> last ps1 = price_of (tick_of_price l + 1) \<and> Is_partition' l ps1 \<and> ps2 \<noteq> [] \<and> last ps2 = last psa \<and> Is_partition' (price_of (tick_of_price l + 1)) ps2"
-  assume a2: "tick_of_price la \<le> tick_of_price (last psa)"
-  assume a3: "psa \<noteq> []"
-  assume a4: "u = last psa"
-  assume a5: "In_a_tick la a"
-  assume a6: "Is_partition' a psa"
-  have f7: "tick_of_price la \<le> tick_of_price u"
-    using a4 a2 by meson
-  have f8: "\<forall>rs r. (r::real) # rs = [r] @ rs"
-    by simp
-  have "In_a_tick la a"
-    using a5 by meson
-  then have "tick_of_price la = tick_of_price a \<longrightarrow> (\<exists>rs rsa. price_of (tick_of_price la + 1) = last rs \<and> a # psa = rs @ rsa \<and> [] \<noteq> rs \<and> u = last rsa \<and> Is_partition' la rs \<and> [] \<noteq> rsa \<and> Is_partition' (price_of (tick_of_price la + 1)) rsa)"
-    using f7 a6 a4 a1 by (metis (no_types) Is_partition'.simps(2) append_Cons last_ConsR list.discI)
-  then show "\<exists>rs rsa. a # psa = rs @ rsa \<and> rs \<noteq> [] \<and> last rs = price_of (tick_of_price la + 1) \<and> Is_partition' la rs \<and> rsa \<noteq> [] \<and> last rsa = last psa \<and> Is_partition' (price_of (tick_of_price la + 1)) rsa"
-    using f8 a6 a5 a4 a3 by (smt (z3) In_a_tick_alt Is_partition'.simps(1) Is_partition'.simps(2) last_ConsL)
-next
+  \<open>\<not> Const_Interval L l u \<Longrightarrow> \<exists>k. \<forall>A B. Is_partition L l u A \<and> Is_partition L l u B \<longrightarrow> k\<noteq>u \<and> List.member A k \<and> List.member B k \<close>
+  by (metis Is_partition_def in_set_member last_in_set)
 
-primrec reserve_change :: \<open>liquidity \<Rightarrow> real \<Rightarrow> real list \<Rightarrow> real \<times> real\<close>
-  where \<open>reserve_change L low [] = (0,0)\<close> |
-        \<open>reserve_change L low (h#l) =
-            reserve_change_in_a_tick (L (tick_of_price low)) low h + reserve_change L h l\<close>
+lemma
+  \<open> Is_partition L l u (A1 @ A2)
+\<Longrightarrow> A1 \<noteq> []
+\<Longrightarrow> Is_partition L l (last A1) A1 \<and> Is_partition L (last A1) u A2\<close>
+  apply (induct )
 
-lemma reserve_change_In_a_tick:
-  \<open> In_a_tick l u
-\<Longrightarrow> Is_partition l u A
-\<Longrightarrow> reserve_change L l A = reserve_change_in_a_tick (L (tick_of_price l)) l u \<close>
-  apply (induct A arbitrary: l; simp add: Is_partition_def; case_tac \<open>A \<noteq> []\<close>; simp add: zero_prod_def)
-  by (smt (z3) In_a_tick_alt In_a_tick_def Is_partition'_le_last ab_semigroup_add_class.add_ac(1) add.commute add_left_cancel reserve_change_in_a_tick_sum)
+lemma
+  \<open> Is_partition L l u A
+\<Longrightarrow> List.member A m
+\<Longrightarrow> (\<exists>A1 A2. A1 @ A2 = A \<and> Is_partition L l m A1 \<and> Is_partition L m u A2)\<close>
+  
 
-lemma reserve_change_consist_among_partitions':
-  assumes LE: \<open>i \<le> j\<close>
-  shows \<open>\<forall>up'. 0 < low' \<and> low' \<le> up' \<and> tick_of_price low' = i \<and> tick_of_price up' = j
-          \<longrightarrow> Is_partition low' up' A
-          \<longrightarrow> Is_partition low' up' B
-          \<longrightarrow> reserve_change L low' A = reserve_change L low' B\<close>
-  thm int_ge_induct[OF LE]
-  apply (induct arbitrary: A B rule: int_ge_induct[OF LE])
-  apply (metis In_a_tick_alt reserve_change_In_a_tick)
+lemma
+  \<open>(\<forall>k. \<exists>A B. Is_partition L l u A \<and> Is_partition L l u B \<and> \<not> (List.member A k \<and> List.member B k))
+    \<Longrightarrow> Const_Interval L l u\<close>
   apply clarsimp
-
-
-lemma reserve_change_consist_among_partitions:
-  assumes LE: \<open>low \<le> up\<close>
-      and part_A: \<open>Is_partition low up A\<close>
-      and part_B: \<open>Is_partition low up B\<close>
-    shows \<open>reserve_change L low A = reserve_change L low B\<close>
-proof -
-  have t0: \<open>0 < low \<and> 0 < up\<close>
-    using Is_partition_impl_0_LT_low LE order_less_le_trans part_B by blast
-  have t1: \<open>tick_of_price low \<le> tick_of_price up\<close>
-    using Is_partition_impl_0_LT_low LE part_A tick_of_price_LE_mono by blast
-  show ?thesis
-thm reserve_change_consist_among_partitions'[OF t1, THEN spec, THEN spec, THEN mp, THEN mp, THEN mp, OF _ part_A]
-    apply (rule reserve_change_consist_among_partitions'[OF t1, THEN spec, THEN spec, THEN mp, THEN mp, THEN mp, OF _ part_A])
-  have \<open>\<forall>low' up'. 0 < low' \<and> low' \<le> up' \<and> tick_of_price up' = tick_of_price up \<and> tick_of_price low' = tick_of_price low
-          \<longrightarrow> Is_partition low' up' A
-          \<longrightarrow> Is_partition low' up' B
-          \<longrightarrow> reserve_change L low' A = reserve_change L low' B\<close>
+  by (metis Is_partition_def in_set_member last_in_set)
+*)
 
 lemma
-  \<open> Is_partition low up A
-\<Longrightarrow> Is_partition low up B
-\<Longrightarrow> reserve_change L low A = reserve_change L low B\<close>
-  apply (induct A)
-   apply (simp add: Is_partition_def)
-  apply (case_tac \<open>A = []\<close>; simp add: Is_partition_def)
+  \<open>0 < l \<Longrightarrow> l \<le> u \<Longrightarrow> \<exists>A. Is_partition (L o tick_of_price) l u A\<close>
+  subgoal premises prems proof -
+    have x1: \<open>tick_of_price l \<le> tick_of_price u\<close>
+      by (simp add: prems(1) prems(2) tick_of_price_LE_mono)
+    have \<open>\<forall>l'. 0 < l' \<and> l' \<le> u \<longrightarrow> tick_of_price l' = tick_of_price l \<longrightarrow> (\<exists>A. Is_partition (L \<circ> tick_of_price) l' u A)\<close>
+      apply (induct rule: int_le_induct[OF x1])
+       apply clarify subgoal for l'
+         apply (rule exI[where x=\<open>[u]\<close>]; simp add: Is_partition_def Const_Interval_def)
+        by (smt (verit, best) tick_of_price_LE_mono)
+       apply clarify subgoal premises prems for i l' proof -
+        obtain A where A: \<open>Is_partition (L \<circ> tick_of_price) (price_of i) u A\<close>
+          by (metis dual_order.order_iff_strict nle_le order_trans prems(1) prems(2) prems(3) prems(4) price_of_L0 price_of_smono price_of_tick tick_of_price)
+        have B: \<open>Const_Interval (L \<circ> tick_of_price) l' (price_of i)\<close>
+          unfolding Const_Interval_def apply simp
+          by (metis diff_add_cancel dual_order.order_iff_strict dual_order.strict_iff_not dual_order.strict_trans2 linorder_linear prems(3) prems(5) price_of_mono price_of_tick tick_of_price_LE_mono zle_diff1_eq)
+        show ?thesis
+          by (meson B Is_partition.simps(2) \<open>\<And>thesis. (\<And>A. Is_partition (L \<circ> tick_of_price) (price_of i) u A \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close>)
+      qed .
+    then show ?thesis
+      using prems(1) prems(2) by blast
+  qed .
 
 
+lemma partition_intergral_irrelavent_with_parition':
+  \<open> (\<forall>C l m u. l \<le> m \<and> m \<le> u \<longrightarrow> S C l m + S C m u = S C l u)
+\<Longrightarrow> (\<forall>C a. S C a a = 0)
+\<Longrightarrow> Is_partition L l u A
+\<Longrightarrow>  partition_intergral S L l u A = partition_intergral S L l u (Eps (Is_key_partition L l u))\<close>
+    apply (induct A arbitrary: l; simp)
+  apply (metis Is_key_partition.simps(1) Key_partition_uniq partition_intergral.simps(1) someI_ex)
+    
+    subgoal for a A l
+      apply (cases \<open>Const_Interval L l u\<close>)
+       apply (smt (verit, best) Const_Interval_LE Const_Interval_eq_lower Const_Interval_triangle Is_key_partition.simps(1) Is_partition_imp_LE Key_partition_uniq partition_intergral.simps(1) someI_ex)
+      apply clarify
+      subgoal premises prems proof -
+        have t1: \<open>Is_partition L l u (a # A)\<close>
+          by (simp add: prems(5) prems(6))
+        have t2: \<open>Is_key_partition L l u (Eps (Is_key_partition L l u))\<close>
+          by (metis Key_partition_exists t1 verit_sko_ex')
+        obtain kl where kl: \<open>KeyPoint L l kl\<close>
+          using KeyPoint_exist prems(4) t1 by blast
+        have t_l_kl: \<open>Const_Interval L l kl\<close>
+          using KeyPoint_def kl by blast
+        have t3: \<open>List.member (Eps (Is_key_partition L l u)) kl\<close>
+          by (metis Is_key_partition.simps(1) Is_key_partition.simps(2) KeyPoint_uniq kl member_rec(1) min_list.cases prems(4) t2)
+        obtain ps1 ps2 where ps12: \<open>Eps (Is_key_partition L l u) = ps1 @ [kl] @ ps2 \<and> Is_key_partition L l kl ps1 \<and> Is_key_partition L kl u ps2\<close>
+          using Key_partition_split t2 t3 by blast
+        have ps12_integral: \<open>partition_intergral S L l u (Eps (Is_key_partition L l u))
+                = partition_intergral S L l kl ps1 + partition_intergral S L kl u ps2\<close>
+          by (metis (no_types) Is_key_partition.simps(1) Key_partition_uniq append_Cons append_Nil partition_intergral.simps(1) partition_intergral.simps(2) ps12 t_l_kl)
+        have ps1_integral: \<open>partition_intergral S L l kl ps1 = S (L l) l kl\<close>
+          using Is_key_partition.simps(1) Key_partition_uniq partition_intergral.simps(1) ps12 t_l_kl by blast
 
+        have \<open>KeyPoint L a kl \<or> a = kl\<close>
+          by (metis Const_Interval_key_point KeyPoint_def KeyPoint_uniq kl prems(5))
+        then consider (a) \<open>a = kl\<close> | (b) \<open>KeyPoint L a kl\<close>
+          by blast
+        then show ?thesis proof cases
+          case a
+          then show ?thesis
+            by (metis Key_partition_uniq ps12 ps12_integral ps1_integral someI)
+        next
+          case b
+          then show ?thesis
+            by (smt (verit) Const_Interval_LE Eps_cong Is_key_partition.simps(1) Is_key_partition.simps(2) Is_partition_imp_LE KeyPoint_def Key_partition_uniq add.assoc append_Cons append_self_conv2 partition_intergral.simps(2) prems(2) prems(4) prems(5) ps12 t1 t_l_kl xx1)
+        qed
+      qed . .
 
+definition reserve_change_of_partition
+  where \<open>reserve_change_of_partition L lower upper ps
+    = partition_intergral reserve_change_in_a_step (L o tick_of_price) lower upper ps\<close>
 
-lemma exists_partition:
-  assumes VL: \<open>0 < low\<close>
-      and LE: \<open>low \<le> up\<close>
-    shows \<open>\<exists>ps. Is_partition low up ps\<close>
-proof -
-  have t1: \<open>tick_of_price low \<le> tick_of_price up\<close>
-    by (simp add: LE VL tick_of_price_LE_mono)
-  have \<open>\<forall>up'. 0 < up' \<and> low \<le> up' \<and> tick_of_price up' = tick_of_price up
-          \<longrightarrow> (\<exists>ps. ps \<noteq> [] \<and> last ps = up' \<and> Is_partition' low ps)\<close>
-    apply (induct rule: int_ge_induct[OF t1])
-     apply (clarsimp simp add: Is_partition'_def In_a_tick_def)
-    subgoal for up' apply (rule exI[where x=\<open>[up']\<close>]; simp)
-      using price_of_tick by fastforce
-    apply auto subgoal premises prems for i up' proof -
-      obtain up2 where up2: \<open>0 < up2 \<and> low \<le> up2 \<and> tick_of_price up2 = i \<and> up2 \<le> up'\<close>
-        by (metis VL linorder_linear order_antisym_conv order_le_less prems(1) prems(3) prems(5) price_of_L0 price_of_tick tick_of_price tick_of_price_LE_mono)
-      obtain ps2 where ps2: \<open>ps2 \<noteq> [] \<and> last ps2 = up2 \<and> Is_partition' low ps2\<close>
-        using prems(2) up2 by blast
-      define ps3 where \<open>ps3 = ps2 @ [price_of (i+1)]\<close>
-      have t1: \<open>last ps3 = price_of (i+1)\<close> unfolding ps3_def by simp
-      have t2: \<open>ps3 \<noteq> []\<close> unfolding ps3_def by simp
-      have t3: \<open>Is_partition' low ps3\<close> unfolding ps3_def
-        apply (simp add: ps2 In_a_tick_def up2)
-        using price_of_tick up2 by fastforce
-      show ?thesis apply (rule exI[where x=\<open>ps3 @ [up']\<close>]; simp add: ps2 In_a_tick_def up2 t3 t2 t1 tick_of_price)
-        using prems(3) prems(5) price_of_tick by fastforce
-    qed .
-  then show ?thesis
-    unfolding Is_partition_def
-    using LE VL by fastforce
-qed
+definition reserve_change
+  where \<open>reserve_change L lower upper
+    = reserve_change_of_partition L lower upper (Eps (Is_key_partition (L o tick_of_price) lower upper))\<close>
+
+lemma reserve_change_irrelavent_with_partition:
+  \<open> Is_partition (L o tick_of_price) l u ps
+\<Longrightarrow> reserve_change_of_partition L l u ps = reserve_change L l u\<close>
+  unfolding reserve_change_of_partition_def reserve_change_def
+  by (simp add: partition_intergral_irrelavent_with_parition' reserve_change_in_a_tick_0 reserve_change_in_a_tick_sum)
+ 
+
 
 
 abbreviation XOR (infixr "XOR" 35) where \<open>A XOR B \<equiv> (A \<and> B \<or> \<not> A \<and> \<not> B)\<close>
@@ -218,6 +359,22 @@ definition swap_step :: \<open>real \<Rightarrow> real \<Rightarrow> real \<Righ
         fee = amountIn * \<gamma> / (1 - \<gamma>)
      in (next_price, amountIn, amountOut, fee)
 )\<close>
+
+lemma
+  \<open> (price >= price_target)
+\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain \<gamma>
+\<Longrightarrow> (amountIn, -amountOut) = reserve_change_in_a_step L price next_price\<close>
+  unfolding reserve_change_in_a_step_def swap_step_def
+apply (auto simp add: min_def Let_def max_def)
+  apply (simp add: minus_mult_right)
+  by (metis minus_diff_eq mult_minus_right)
+
+lemma
+  \<open> \<not> (price >= price_target)
+\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain \<gamma>
+\<Longrightarrow> (-amountOut, amountIn) = reserve_change_in_a_step L price next_price\<close>
+  unfolding reserve_change_in_a_step_def swap_step_def
+  by (auto simp add: min_def Let_def max_def)
 
 (* In swap_step, amount_remain cannot be zero *)
 
