@@ -2,6 +2,200 @@ theory Uniswap_SwapMath
   imports Uniswap_SqrtPriceMath Uniswap_Tick_Math
 begin
 
+definition reserve_change_in_a_tick :: \<open>real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<times> real\<close>
+  where \<open>reserve_change_in_a_tick L price0 price1
+    = (L / price1 - L / price0 \<comment> \<open>reserve change in token0\<close>,
+       L * (price1 - price0) \<comment> \<open>reserve change in token1\<close>)\<close>
+
+lemma reserve_change_in_a_tick_sum:
+  \<open> price0 \<le> price1 \<and> price1 \<le> price2
+\<Longrightarrow> reserve_change_in_a_tick L price0 price1 + reserve_change_in_a_tick L price1 price2 = reserve_change_in_a_tick L price0 price2 \<close>
+  unfolding reserve_change_in_a_tick_def
+  by (simp add: right_diff_distrib)
+
+lemma reserve_change_in_a_tick_sum_rev:
+  \<open> price2 \<le> price1 \<and> price1 \<le> price0
+\<Longrightarrow> reserve_change_in_a_tick L price0 price1 + reserve_change_in_a_tick L price1 price2 = reserve_change_in_a_tick L price0 price2 \<close>
+  unfolding reserve_change_in_a_tick_def
+  by (simp add: right_diff_distrib)
+
+definition In_a_tick :: \<open>real \<Rightarrow> real \<Rightarrow> bool\<close> \<comment> \<open>left close, right open\<close>
+  where \<open>In_a_tick lower upper \<longleftrightarrow> 0 < lower \<and> lower \<le> upper \<and> upper \<le> price_of (tick_of_price lower + 1)\<close>
+
+lemma Having_same_tick_In_a_tick:
+  \<open> 0 < l \<and> l \<le> u
+\<Longrightarrow> tick_of_price l = tick_of_price u
+\<Longrightarrow> In_a_tick l u\<close>
+  unfolding In_a_tick_def
+  by (smt (verit, ccfv_SIG) price_of_tick)
+
+lemma In_a_tick_alt:
+  \<open>In_a_tick l u \<longleftrightarrow> 0 < l \<and> l \<le> u \<and> (tick_of_price l = tick_of_price u \<or> u = price_of (tick_of_price l + 1))\<close>
+  unfolding In_a_tick_def
+  by (smt (z3) price_of_smono price_of_tick)
+
+lemma In_a_tick_triangle:
+  \<open>In_a_tick l m \<Longrightarrow> In_a_tick l u \<Longrightarrow> m \<le> u \<Longrightarrow> In_a_tick m u\<close>
+  unfolding In_a_tick_alt
+  by (smt (verit, best) In_a_tick_alt tick_of_price_LE_mono)
+
+primrec Is_partition' :: \<open>real \<Rightarrow> real list \<Rightarrow> bool\<close>
+  where \<open>Is_partition' low [] \<longleftrightarrow> True\<close> |
+        \<open>Is_partition' low (h#l) \<longleftrightarrow> In_a_tick low h \<and> Is_partition' h l\<close>
+
+lemma Is_partition_last[simp]:
+  \<open> ps2 \<noteq> []
+\<Longrightarrow> Is_partition' low ps2
+\<Longrightarrow> Is_partition' low (ps2 @ [up]) \<longleftrightarrow> In_a_tick (last ps2) up\<close>
+  by (induct ps2 arbitrary: low; simp)
+
+lemma Is_partition'_cat:
+  \<open> ps1 \<noteq> []
+\<Longrightarrow> Is_partition' low ps1
+\<Longrightarrow> Is_partition' (last ps1) ps2
+\<Longrightarrow> Is_partition' low (ps1 @ ps2)\<close>
+  by (induct ps2 arbitrary: ps1; simp)
+     (metis Is_partition_last append.assoc append_Cons append_Nil snoc_eq_iff_butlast)
+
+lemma Is_partition'_ordered_chain:
+  \<open>Is_partition' l ps \<Longrightarrow> \<forall>i < length ps. l \<le> (ps ! i)\<close>
+  apply (induct ps arbitrary: l; simp add: In_a_tick_def)
+  using less_Suc_eq_0_disj by fastforce
+
+lemma Is_partition'_le_last:
+  \<open>ps \<noteq> [] \<Longrightarrow> Is_partition' l ps \<Longrightarrow> l \<le> last ps\<close>
+  by (simp add: Is_partition'_ordered_chain last_conv_nth)
+
+
+definition \<open>Is_partition low up ps \<longleftrightarrow> ps \<noteq> [] \<and> last ps = up \<and> Is_partition' low ps\<close>
+
+lemma Is_partition_impl_0_LT_low:
+  \<open>Is_partition l u ps \<Longrightarrow> 0 < l\<close>
+  unfolding Is_partition_def
+  by (metis In_a_tick_def Is_partition'.simps(2) neq_Nil_conv) 
+
+lemma Is_partition_cat:
+  \<open> Is_partition low mid ps1
+\<Longrightarrow> Is_partition mid up ps2
+\<Longrightarrow> Is_partition low up (ps1 @ ps2) \<close>
+  unfolding Is_partition_def
+  by (auto simp add: Is_partition'_cat)
+
+lemma
+  \<open> tick_of_price l \<le> tick_of_price u
+\<Longrightarrow> Is_partition l u ps
+\<Longrightarrow> \<exists>ps1 ps2. ps = ps1 @ ps2 \<and> Is_partition l (price_of (tick_of_price l+1)) ps1 \<and> Is_partition (price_of (tick_of_price l+1)) u ps2\<close>
+  unfolding Is_partition_def
+  apply (induct ps arbitrary: l )
+  apply blast
+  apply (case_tac \<open>ps = []\<close>; clarsimp)
+  prefer 2
+proof -
+  fix a :: real and psa :: "real list" and la :: real
+  assume a1: "\<And>l. \<lbrakk>tick_of_price l \<le> tick_of_price (last psa); Is_partition' l psa\<rbrakk> \<Longrightarrow> \<exists>ps1 ps2. psa = ps1 @ ps2 \<and> ps1 \<noteq> [] \<and> last ps1 = price_of (tick_of_price l + 1) \<and> Is_partition' l ps1 \<and> ps2 \<noteq> [] \<and> last ps2 = last psa \<and> Is_partition' (price_of (tick_of_price l + 1)) ps2"
+  assume a2: "tick_of_price la \<le> tick_of_price (last psa)"
+  assume a3: "psa \<noteq> []"
+  assume a4: "u = last psa"
+  assume a5: "In_a_tick la a"
+  assume a6: "Is_partition' a psa"
+  have f7: "tick_of_price la \<le> tick_of_price u"
+    using a4 a2 by meson
+  have f8: "\<forall>rs r. (r::real) # rs = [r] @ rs"
+    by simp
+  have "In_a_tick la a"
+    using a5 by meson
+  then have "tick_of_price la = tick_of_price a \<longrightarrow> (\<exists>rs rsa. price_of (tick_of_price la + 1) = last rs \<and> a # psa = rs @ rsa \<and> [] \<noteq> rs \<and> u = last rsa \<and> Is_partition' la rs \<and> [] \<noteq> rsa \<and> Is_partition' (price_of (tick_of_price la + 1)) rsa)"
+    using f7 a6 a4 a1 by (metis (no_types) Is_partition'.simps(2) append_Cons last_ConsR list.discI)
+  then show "\<exists>rs rsa. a # psa = rs @ rsa \<and> rs \<noteq> [] \<and> last rs = price_of (tick_of_price la + 1) \<and> Is_partition' la rs \<and> rsa \<noteq> [] \<and> last rsa = last psa \<and> Is_partition' (price_of (tick_of_price la + 1)) rsa"
+    using f8 a6 a5 a4 a3 by (smt (z3) In_a_tick_alt Is_partition'.simps(1) Is_partition'.simps(2) last_ConsL)
+next
+
+primrec reserve_change :: \<open>liquidity \<Rightarrow> real \<Rightarrow> real list \<Rightarrow> real \<times> real\<close>
+  where \<open>reserve_change L low [] = (0,0)\<close> |
+        \<open>reserve_change L low (h#l) =
+            reserve_change_in_a_tick (L (tick_of_price low)) low h + reserve_change L h l\<close>
+
+lemma reserve_change_In_a_tick:
+  \<open> In_a_tick l u
+\<Longrightarrow> Is_partition l u A
+\<Longrightarrow> reserve_change L l A = reserve_change_in_a_tick (L (tick_of_price l)) l u \<close>
+  apply (induct A arbitrary: l; simp add: Is_partition_def; case_tac \<open>A \<noteq> []\<close>; simp add: zero_prod_def)
+  by (smt (z3) In_a_tick_alt In_a_tick_def Is_partition'_le_last ab_semigroup_add_class.add_ac(1) add.commute add_left_cancel reserve_change_in_a_tick_sum)
+
+lemma reserve_change_consist_among_partitions':
+  assumes LE: \<open>i \<le> j\<close>
+  shows \<open>\<forall>up'. 0 < low' \<and> low' \<le> up' \<and> tick_of_price low' = i \<and> tick_of_price up' = j
+          \<longrightarrow> Is_partition low' up' A
+          \<longrightarrow> Is_partition low' up' B
+          \<longrightarrow> reserve_change L low' A = reserve_change L low' B\<close>
+  thm int_ge_induct[OF LE]
+  apply (induct arbitrary: A B rule: int_ge_induct[OF LE])
+  apply (metis In_a_tick_alt reserve_change_In_a_tick)
+  apply clarsimp
+
+
+lemma reserve_change_consist_among_partitions:
+  assumes LE: \<open>low \<le> up\<close>
+      and part_A: \<open>Is_partition low up A\<close>
+      and part_B: \<open>Is_partition low up B\<close>
+    shows \<open>reserve_change L low A = reserve_change L low B\<close>
+proof -
+  have t0: \<open>0 < low \<and> 0 < up\<close>
+    using Is_partition_impl_0_LT_low LE order_less_le_trans part_B by blast
+  have t1: \<open>tick_of_price low \<le> tick_of_price up\<close>
+    using Is_partition_impl_0_LT_low LE part_A tick_of_price_LE_mono by blast
+  show ?thesis
+thm reserve_change_consist_among_partitions'[OF t1, THEN spec, THEN spec, THEN mp, THEN mp, THEN mp, OF _ part_A]
+    apply (rule reserve_change_consist_among_partitions'[OF t1, THEN spec, THEN spec, THEN mp, THEN mp, THEN mp, OF _ part_A])
+  have \<open>\<forall>low' up'. 0 < low' \<and> low' \<le> up' \<and> tick_of_price up' = tick_of_price up \<and> tick_of_price low' = tick_of_price low
+          \<longrightarrow> Is_partition low' up' A
+          \<longrightarrow> Is_partition low' up' B
+          \<longrightarrow> reserve_change L low' A = reserve_change L low' B\<close>
+
+lemma
+  \<open> Is_partition low up A
+\<Longrightarrow> Is_partition low up B
+\<Longrightarrow> reserve_change L low A = reserve_change L low B\<close>
+  apply (induct A)
+   apply (simp add: Is_partition_def)
+  apply (case_tac \<open>A = []\<close>; simp add: Is_partition_def)
+
+
+
+
+
+lemma exists_partition:
+  assumes VL: \<open>0 < low\<close>
+      and LE: \<open>low \<le> up\<close>
+    shows \<open>\<exists>ps. Is_partition low up ps\<close>
+proof -
+  have t1: \<open>tick_of_price low \<le> tick_of_price up\<close>
+    by (simp add: LE VL tick_of_price_LE_mono)
+  have \<open>\<forall>up'. 0 < up' \<and> low \<le> up' \<and> tick_of_price up' = tick_of_price up
+          \<longrightarrow> (\<exists>ps. ps \<noteq> [] \<and> last ps = up' \<and> Is_partition' low ps)\<close>
+    apply (induct rule: int_ge_induct[OF t1])
+     apply (clarsimp simp add: Is_partition'_def In_a_tick_def)
+    subgoal for up' apply (rule exI[where x=\<open>[up']\<close>]; simp)
+      using price_of_tick by fastforce
+    apply auto subgoal premises prems for i up' proof -
+      obtain up2 where up2: \<open>0 < up2 \<and> low \<le> up2 \<and> tick_of_price up2 = i \<and> up2 \<le> up'\<close>
+        by (metis VL linorder_linear order_antisym_conv order_le_less prems(1) prems(3) prems(5) price_of_L0 price_of_tick tick_of_price tick_of_price_LE_mono)
+      obtain ps2 where ps2: \<open>ps2 \<noteq> [] \<and> last ps2 = up2 \<and> Is_partition' low ps2\<close>
+        using prems(2) up2 by blast
+      define ps3 where \<open>ps3 = ps2 @ [price_of (i+1)]\<close>
+      have t1: \<open>last ps3 = price_of (i+1)\<close> unfolding ps3_def by simp
+      have t2: \<open>ps3 \<noteq> []\<close> unfolding ps3_def by simp
+      have t3: \<open>Is_partition' low ps3\<close> unfolding ps3_def
+        apply (simp add: ps2 In_a_tick_def up2)
+        using price_of_tick up2 by fastforce
+      show ?thesis apply (rule exI[where x=\<open>ps3 @ [up']\<close>]; simp add: ps2 In_a_tick_def up2 t3 t2 t1 tick_of_price)
+        using prems(3) prems(5) price_of_tick by fastforce
+    qed .
+  then show ?thesis
+    unfolding Is_partition_def
+    using LE VL by fastforce
+qed
+
 
 abbreviation XOR (infixr "XOR" 35) where \<open>A XOR B \<equiv> (A \<and> B \<or> \<not> A \<and> \<not> B)\<close>
 

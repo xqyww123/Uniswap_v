@@ -85,6 +85,11 @@ proof -
     by (metis (no_types, lifting) someI_ex)
 qed
 
+lemma tick_of_price_LE_mono:
+  \<open>0 < a \<Longrightarrow> a \<le> b \<Longrightarrow> tick_of_price a \<le> tick_of_price b\<close>
+  by (smt (verit) price_of_smono price_of_tick)
+  
+
 
 text \<open>As we are not planning verifying the numeric calculation and its precision (in a short term),
   we declare them directly as assumed axioms.\<close>
