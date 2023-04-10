@@ -544,7 +544,7 @@ affirm unfolding \<Delta>growth_def real_next_tick_def apply auto
         using kk9 apply blast
         using kb2 by fastforce
 
-      have p4[simp]: \<open>if zeroForOne then reserve_change L next_price price = (amountIn, amountOut) + reserve_change L pr price
+      have Iv6: \<open>if zeroForOne then reserve_change L next_price price = (amountIn, amountOut) + reserve_change L pr price
                           else reserve_change L price next_price = reserve_change L price pr + (amountOut, amountIn)\<close>
         apply auto
         apply (smt (verit, best) add.commute kk6 p2 p3 price_of_L0 reserve_change_add_left the_\<phi>(22))
@@ -558,7 +558,7 @@ affirm unfolding \<Delta>growth_def real_next_tick_def apply auto
         by (metis fee_factor_def fee_growth_add_right group_cancel.add1 kk9 the_\<phi>(2) the_\<phi>(22))
         
       ;;
-      \<medium_right_bracket> using \<open>let _ = _ in _\<close> by (auto simp add: Iv1 Iv2 Iv3 Iv4 Iv5 d2 add_divide_distrib distrib_right fee_factor_def)
+      \<medium_right_bracket> using \<open>let _ = _ in _\<close> by (auto simp add: Iv1 Iv2 Iv3 Iv4 Iv5 Iv6 d2 add_divide_distrib distrib_right fee_factor_def)
     ;; affirm apply (auto simp add: \<phi> zero_prod_def)
     using the_\<phi>(16) apply fastforce
     using the_\<phi>(16) apply fastforce
