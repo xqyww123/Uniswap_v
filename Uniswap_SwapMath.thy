@@ -1,10 +1,10 @@
 theory Uniswap_SwapMath
-  imports Uniswap_SqrtPriceMath Uniswap_Tick_Math
+  imports Uniswap_SqrtPriceMath Uniswap_Tick_Math UniSWP_Tick
 begin
 
 definition reserve_change_in_a_step :: \<open>real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<times> real\<close>
   where \<open>reserve_change_in_a_step L price0 price1
-    = (L / price1 - L / price0 \<comment> \<open>reserve change in token0\<close>,
+    = (L / price0 - L / price1 \<comment> \<open>reserve change in token0\<close>,
        L * (price1 - price0) \<comment> \<open>reserve change in token1\<close>)\<close>
 
 lemma reserve_change_in_a_tick_0:
@@ -23,6 +23,49 @@ lemma reserve_change_in_a_tick_sum_rev:
   unfolding reserve_change_in_a_step_def
   by (simp add: right_diff_distrib)
 
+
+
+consts fee :: real \<comment> \<open>We model the fee by a constant now\<close>
+specification (fee)
+  fee_range[simp]: \<open>0 < fee \<and> fee < 1\<close>
+  by (simp add: dense)
+
+definition \<open>fee_factor = fee / (1 - fee)\<close>
+
+lemma fee_factor_GT_0: \<open>0 < fee_factor\<close> unfolding fee_factor_def by auto
+
+definition fee_growth_in_a_tick :: \<open>bool \<Rightarrow> real \<Rightarrow> liquidity \<Rightarrow> int \<Rightarrow> real \<Rightarrow> real \<Rightarrow> (int \<Rightarrow> real \<times> real)\<close>
+  where \<open>fee_growth_in_a_tick zeroForOne factor L i price0 price1 =
+    0(i:= (if L i = 0 then (0,0) else
+            if zeroForOne then ((1/price0 - 1/price1) * factor, 0) else (0, (price1 - price0) * factor)))\<close>
+  \<comment> \<open>fee growth in token0, fee growth in token1\<close>
+
+lemma fee_growth_in_a_tick_0:
+  \<open>fee_growth_in_a_tick zeroForOne factor L i price price = 0\<close>
+  unfolding fee_growth_in_a_tick_def by (simp add: zero_prod_def fun_eq_iff)
+
+lemma fee_growth_in_a_tick_add:
+  \<open> price0 \<le> price1 \<and> price1 \<le> price2
+\<Longrightarrow> fee_growth_in_a_tick zeroForOne factor L i price0 price1 + fee_growth_in_a_tick zeroForOne factor L i price1 price2
+        = fee_growth_in_a_tick zeroForOne factor L i price0 price2 \<close>
+  unfolding fee_growth_in_a_tick_def
+  by (simp add: right_diff_distrib fun_eq_iff plus_fun_def diff_divide_distrib left_diff_distrib zero_prod_def)
+
+lemma gSum_fee_growth_in_a_tick[simp]:
+  \<open> MIN_PRICE \<le> pr0 \<and> pr0 \<le> pr1 \<and> pr1 < MAX_PRICE
+\<Longrightarrow> gSum (fee_growth_in_a_tick zeroForOne factor L (tick_of_price pr0) pr0 pr1)
+        = (if L (tick_of_price pr0) = 0 then (0,0)
+           else if zeroForOne then ( (1/pr0 - 1/pr1) * factor ,0) else (0, (pr1 - pr0) * factor))\<close>
+  unfolding fee_growth_in_a_tick_def
+  apply (auto simp add: zero_fun_def)
+  using zero_prod_def apply force
+  apply (smt (verit) price_of_L0 price_of_smono price_of_tick)
+  apply (metis linorder_linear linorder_not_le price_of_L0 tick_of_price tick_of_price_LE_mono zle_diff1_eq)
+  apply (metis dual_order.strict_iff_not linorder_le_cases price_of_L0 tick_of_price tick_of_price_LE_mono zle_diff1_eq)
+  using zero_prod_def apply force
+  apply (smt (verit, best) less_MAX_PRICE_less_MAX_TICK price_of_L0)
+  using zero_prod_def apply force
+  by (smt (verit, ccfv_SIG) less_MAX_PRICE_less_MAX_TICK price_of_L0)
 
 
 definition Const_Interval :: \<open>(real \<Rightarrow> 'b) \<Rightarrow> real \<Rightarrow> real \<Rightarrow> bool\<close> \<comment> \<open>left close, right open\<close>
@@ -105,7 +148,6 @@ lemma Is_partition_cat:
 \<Longrightarrow> Is_partition f m u ps2
 \<Longrightarrow> Is_partition f l u (ps1 @ [m] @ ps2)\<close>
   by (induct ps1 arbitrary: ps2 m l; simp)
-     
 
 lemma Is_partition_ordered_chain:
   \<open>Is_partition f l u ps \<Longrightarrow> \<forall>i < length ps. l \<le> (ps ! i)\<close>
@@ -126,6 +168,22 @@ lemma Is_partition_split:
   using member_rec(2) apply force
   by (smt (verit, best) Is_partition.simps(1) Is_partition.simps(2) append_eq_Cons_conv member_rec(1))
 
+lemma Is_partition_exists_up:
+  \<open> Ex (Is_partition f l m)
+\<Longrightarrow> Const_Interval f m u
+\<Longrightarrow> Ex (Is_partition f l u)\<close>
+  using Is_partition.simps(1) Is_partition_cat by blast
+
+lemma Is_partition_exists:
+  \<open> Ex (Is_partition f m u)
+\<Longrightarrow> Const_Interval f l u
+\<Longrightarrow> Ex (Is_partition f l u)\<close>
+  using Is_partition.simps(1) by blast
+
+lemma Is_key_partition_implies_Is_partition:
+  \<open> Is_key_partition f l u ps
+\<Longrightarrow> Is_partition f l u ps\<close>
+  by (induct ps arbitrary: l; simp)
 
 lemma Key_partition_exists:
   \<open> Is_partition f l u ps
@@ -194,11 +252,12 @@ primrec partition_intergral :: \<open>('b \<Rightarrow> real \<Rightarrow> real 
   where \<open>partition_intergral S L low up [] = S (L low) low up\<close> |
         \<open>partition_intergral S L low up (h#l) = S (L low) low h + partition_intergral S L h up l\<close>
 
+definition Is_linear_sum
+  where \<open>Is_linear_sum S \<longleftrightarrow> (\<forall>C l m u. l \<le> m \<and> m \<le> u \<longrightarrow> S C l m + S C m u = S C l u)
+                              \<and>  (\<forall>C a. S C a a = 0)\<close>
 
 lemma partition_intergral_add:
-  \<open> (\<forall>C l m u. l \<le> m \<and> m \<le> u \<longrightarrow> S C l m + S C m u = S C l u)
-\<Longrightarrow> (\<forall>C a. S C a a = 0)
-\<Longrightarrow> Is_partition L l m A
+  \<open> Is_partition L l m A
 \<Longrightarrow> Is_partition L m u B
 \<Longrightarrow> partition_intergral S L l m A + partition_intergral S L m u B = partition_intergral S L l u (A@[m]@B)\<close>
   apply (induct A arbitrary: l; simp)
@@ -206,14 +265,16 @@ lemma partition_intergral_add:
   
 
 lemma partition_intergral_const:
-  \<open> (\<forall>C l m u. l \<le> m \<and> m \<le> u \<longrightarrow> S C l m + S C m u = S C l u)
-\<Longrightarrow> (\<forall>C a. S C a a = 0)
+  \<open> Is_linear_sum S
 \<Longrightarrow> Const_Interval L l u
 \<Longrightarrow> Is_partition L l u A
 \<Longrightarrow> partition_intergral S L l u A = S (L l) l u\<close>
+  unfolding Is_linear_sum_def
   apply (induct A arbitrary: l; simp)
   by (smt (verit) Const_Interval_def Is_partition_imp_LE)
-  
+
+
+
 
 (*
 lemma Is_partition_expand:
@@ -251,8 +312,8 @@ lemma
   by (metis Is_partition_def in_set_member last_in_set)
 *)
 
-lemma
-  \<open>0 < l \<Longrightarrow> l \<le> u \<Longrightarrow> \<exists>A. Is_partition (L o tick_of_price) l u A\<close>
+lemma Partition_always_exists:
+  \<open>0 < l \<Longrightarrow> l \<le> u \<Longrightarrow> Ex (Is_partition (L o tick_of_price) l u)\<close>
   subgoal premises prems proof -
     have x1: \<open>tick_of_price l \<le> tick_of_price u\<close>
       by (simp add: prems(1) prems(2) tick_of_price_LE_mono)
@@ -274,13 +335,15 @@ lemma
       using prems(1) prems(2) by blast
   qed .
 
+lemmas Partition_always_exists' = Partition_always_exists[where L=id, simplified]
+
 
 lemma partition_intergral_irrelavent_with_parition':
-  \<open> (\<forall>C l m u. l \<le> m \<and> m \<le> u \<longrightarrow> S C l m + S C m u = S C l u)
-\<Longrightarrow> (\<forall>C a. S C a a = 0)
+  \<open> Is_linear_sum S
 \<Longrightarrow> Is_partition L l u A
 \<Longrightarrow>  partition_intergral S L l u A = partition_intergral S L l u (Eps (Is_key_partition L l u))\<close>
-    apply (induct A arbitrary: l; simp)
+  unfolding Is_linear_sum_def
+  apply (induct A arbitrary: l; simp)
   apply (metis Is_key_partition.simps(1) Key_partition_uniq partition_intergral.simps(1) someI_ex)
     
     subgoal for a A l
@@ -293,11 +356,11 @@ lemma partition_intergral_irrelavent_with_parition':
         have t2: \<open>Is_key_partition L l u (Eps (Is_key_partition L l u))\<close>
           by (metis Key_partition_exists t1 verit_sko_ex')
         obtain kl where kl: \<open>KeyPoint L l kl\<close>
-          using KeyPoint_exist prems(4) t1 by blast
+          using KeyPoint_exist prems(2) t1 by blast
         have t_l_kl: \<open>Const_Interval L l kl\<close>
           using KeyPoint_def kl by blast
         have t3: \<open>List.member (Eps (Is_key_partition L l u)) kl\<close>
-          by (metis Is_key_partition.simps(1) Is_key_partition.simps(2) KeyPoint_uniq kl member_rec(1) min_list.cases prems(4) t2)
+          using Is_key_partition_implies_Is_partition KeyPoint_in_partition kl prems(2) t2 by blast
         obtain ps1 ps2 where ps12: \<open>Eps (Is_key_partition L l u) = ps1 @ [kl] @ ps2 \<and> Is_key_partition L l kl ps1 \<and> Is_key_partition L kl u ps2\<close>
           using Key_partition_split t2 t3 by blast
         have ps12_integral: \<open>partition_intergral S L l u (Eps (Is_key_partition L l u))
@@ -317,28 +380,254 @@ lemma partition_intergral_irrelavent_with_parition':
         next
           case b
           then show ?thesis
-            by (smt (verit) Const_Interval_LE Eps_cong Is_key_partition.simps(1) Is_key_partition.simps(2) Is_partition_imp_LE KeyPoint_def Key_partition_uniq add.assoc append_Cons append_self_conv2 partition_intergral.simps(2) prems(2) prems(4) prems(5) ps12 t1 t_l_kl xx1)
+            by (smt (verit) Const_Interval_LE Const_Interval_eq_lower Eps_cong Is_key_partition.simps(2) Is_partition_imp_LE KeyPoint_def Key_partition_uniq add.assoc partition_intergral.simps(2) prems(2) prems(3) prems(5) ps12 t1 t2 t_l_kl xx1)
         qed
       qed . .
 
-definition reserve_change_of_partition
-  where \<open>reserve_change_of_partition L lower upper ps
-    = partition_intergral reserve_change_in_a_step (L o tick_of_price) lower upper ps\<close>
+
+lemma reserve_change_Is_linear_sum:
+  \<open>Is_linear_sum reserve_change_in_a_step\<close>
+  unfolding Is_linear_sum_def
+  using reserve_change_in_a_tick_0 reserve_change_in_a_tick_sum by presburger
+
 
 definition reserve_change
   where \<open>reserve_change L lower upper
-    = reserve_change_of_partition L lower upper (Eps (Is_key_partition (L o tick_of_price) lower upper))\<close>
+    = partition_intergral reserve_change_in_a_step (L o tick_of_price) lower upper (Eps (Is_key_partition (L o tick_of_price) lower upper))\<close>
 
 lemma reserve_change_irrelavent_with_partition:
   \<open> Is_partition (L o tick_of_price) l u ps
-\<Longrightarrow> reserve_change_of_partition L l u ps = reserve_change L l u\<close>
-  unfolding reserve_change_of_partition_def reserve_change_def
-  by (simp add: partition_intergral_irrelavent_with_parition' reserve_change_in_a_tick_0 reserve_change_in_a_tick_sum)
- 
+\<Longrightarrow> partition_intergral reserve_change_in_a_step (L o tick_of_price) l u ps = reserve_change L l u\<close>
+  unfolding reserve_change_def
+  using partition_intergral_irrelavent_with_parition' reserve_change_Is_linear_sum by blast
+
+definition fee_growth
+  where \<open>fee_growth zeroForOne factor L l u
+    = partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u (Eps (Is_key_partition (tick_of_price) l u))\<close>
+
+lemma fee_growth_Is_linear_sum:
+  \<open>Is_linear_sum (fee_growth_in_a_tick zeroForOne factor L)\<close>
+  unfolding Is_linear_sum_def
+  by (simp add: fee_growth_in_a_tick_0 fee_growth_in_a_tick_add)
+  
+lemma growth_irrelavent_with_partition:
+  \<open> Is_partition tick_of_price l u ps
+\<Longrightarrow> partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u ps = fee_growth zeroForOne factor L l u\<close>
+  unfolding fee_growth_def
+  using fee_growth_Is_linear_sum partition_intergral_irrelavent_with_parition' by blast
+
+lemma Const_Interval_x_x:
+  \<open>Const_Interval (L \<circ> tick_of_price) x x\<close>
+  unfolding Const_Interval_def by simp force
+
+lemmas Const_Interval_x_x' = Const_Interval_x_x[where L=id, simplified]
+
+lemma Is_partition_x_x:
+  \<open>Is_partition (L o tick_of_price) x x []\<close>
+  apply simp
+  using Const_Interval_x_x by blast
+
+lemma reserve_change_0[simp]:
+  \<open>reserve_change L x x = 0\<close>
+  by (metis (no_types, lifting) Const_Interval_x_x Is_key_partition.simps(1) Key_partition_uniq partition_intergral.simps(1) reserve_change_def reserve_change_in_a_tick_0 someI_ex)
+
+lemma fee_growth_0[simp]:
+  \<open>fee_growth zeroForOne factor L x x = 0\<close>
+  by (metis Const_Interval_x_x' Is_key_partition.simps(1) Is_key_partition_implies_Is_partition fee_growth_in_a_tick_0 growth_irrelavent_with_partition partition_intergral.simps(1))
+  
+
+lemma reserve_change_add_left:
+  \<open> 0 < l \<and> m \<le> u
+\<Longrightarrow> Const_Interval (L o tick_of_price) l m
+\<Longrightarrow> reserve_change L m u + reserve_change_in_a_step (L (tick_of_price l)) l m = reserve_change L l u\<close>
+  subgoal premises prems proof -
+    have t1: \<open>Ex (Is_partition (L o tick_of_price) m u)\<close>
+      by (meson Const_Interval_def Partition_always_exists dual_order.strict_trans1 prems(1) prems(2))
+    show ?thesis
+      by (smt (verit, ccfv_threshold) Is_partition.simps(2) add.commute comp_apply partition_intergral.simps(2) prems(2) reserve_change_irrelavent_with_partition t1)
+  qed .
+
+lemma reserve_change_add_right:
+  \<open> 0 < l \<and> l \<le> m
+\<Longrightarrow> Const_Interval (L o tick_of_price) m u
+\<Longrightarrow> reserve_change L l m + reserve_change_in_a_step (L (tick_of_price m)) m u = reserve_change L l u\<close>
+  subgoal premises prems proof -
+    have t1: \<open>Ex (Is_partition (L o tick_of_price) l m)\<close>
+      by (simp add: Partition_always_exists prems(1))
+    have t2: \<open>Is_key_partition (L o tick_of_price) l m (Eps (Is_key_partition (L o tick_of_price) l m))\<close>
+      by (metis Key_partition_exists t1 verit_sko_ex')
+    have t3: \<open>Is_partition (L o tick_of_price) l u (Eps (Is_key_partition (L o tick_of_price) l m) @ [m])\<close>
+      by (metis Is_key_partition_implies_Is_partition Is_partition.simps(1) Is_partition_cat append_Cons append_Nil prems(2) t2)
+    show ?thesis
+      unfolding reserve_change_def
+      by (metis (mono_tags, lifting) Is_key_partition_implies_Is_partition Is_partition.simps(1) append.right_neutral comp_apply partition_intergral_add partition_intergral_const prems(2) reserve_change_Is_linear_sum reserve_change_def reserve_change_irrelavent_with_partition t2 t3)
+  qed .
+
+lemma fee_growth_is_0_when_not_zeroForOne:
+  \<open> 0 < l \<and> l \<le> u
+\<Longrightarrow> global_fee0_growth (fee_growth False fee_factor L l u) = 0\<close>
+  subgoal premises prems
+proof -
+  have \<open> 0 < l \<and> l \<le> u
+     \<Longrightarrow> Is_partition tick_of_price l u ps
+     \<Longrightarrow> global_fee0_growth (partition_intergral (fee_growth_in_a_tick False fee_factor L) tick_of_price l u ps) = 0\<close>
+    for ps
+    apply (induct ps arbitrary: l; simp add: fee_growth_in_a_tick_def zero_fun_def)
+    by (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+  then show ?thesis
+    by (metis Partition_always_exists' growth_irrelavent_with_partition prems) 
+qed .
+
+lemma fee_growth_is_0_when_zeroForOne:
+  \<open> 0 < l \<and> l \<le> u
+\<Longrightarrow> global_fee1_growth (fee_growth True fee_factor L l u) = 0\<close>
+  subgoal premises prems
+proof -
+  have \<open> 0 < l \<and> l \<le> u
+     \<Longrightarrow> Is_partition tick_of_price l u ps
+     \<Longrightarrow> global_fee1_growth (partition_intergral (fee_growth_in_a_tick True fee_factor L) tick_of_price l u ps) = 0\<close>
+    for ps
+    apply (induct ps arbitrary: l; simp add: fee_growth_in_a_tick_def zero_fun_def)
+    by (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+  then show ?thesis
+    by (metis Partition_always_exists' growth_irrelavent_with_partition prems) 
+qed .
 
 
+lemma fee_growth_add_left:
+  \<open> 0 < l \<and> l \<le> m \<and> m \<le> u
+\<Longrightarrow> fee_growth zeroForOne factor L l m + fee_growth zeroForOne factor L m u
+        = fee_growth zeroForOne factor L l u\<close>
+  unfolding fee_growth_def
+  by (smt (verit, ccfv_threshold) Is_partition_cat Partition_always_exists' fee_growth_Is_linear_sum partition_intergral_add partition_intergral_irrelavent_with_parition')
 
-abbreviation XOR (infixr "XOR" 35) where \<open>A XOR B \<equiv> (A \<and> B \<or> \<not> A \<and> \<not> B)\<close>
+lemma fee_growth_add_left_in_a_tick:
+  \<open> 0 < l \<and> m \<le> u
+\<Longrightarrow> Const_Interval tick_of_price l m
+\<Longrightarrow> fee_growth_in_a_tick zeroForOne factor L (tick_of_price l) l m + fee_growth zeroForOne factor L m u
+        = fee_growth zeroForOne factor L l u\<close>
+  by (metis (mono_tags, opaque_lifting) Const_Interval_LE Is_partition.simps(1) fee_growth_add_left growth_irrelavent_with_partition partition_intergral.simps(1))
+
+lemma fee_growth_add_right:
+  \<open> 0 < l \<and> l \<le> m \<and> m \<le> u
+\<Longrightarrow> fee_growth zeroForOne factor L l m + fee_growth zeroForOne factor L m u
+        = fee_growth zeroForOne factor L l u\<close>
+unfolding fee_growth_def
+  using fee_growth_add_left fee_growth_def by auto
+
+
+lemma fee_growth_add_right_in_a_tick:
+  \<open> 0 < l \<and> l \<le> m
+\<Longrightarrow> Const_Interval tick_of_price m u
+\<Longrightarrow> fee_growth zeroForOne factor L l m + fee_growth_in_a_tick zeroForOne factor L (tick_of_price m) m u
+        = fee_growth zeroForOne factor L l u\<close>
+  by (metis (mono_tags, lifting) Const_Interval_LE Is_partition.simps(1) fee_growth_add_right growth_irrelavent_with_partition partition_intergral.simps(1))
+
+lemma gSum_fee_growth_eq_0:
+  \<open> MIN_PRICE \<le> pr0 \<and> pr0 \<le> pr1 \<and> pr1 < MAX_PRICE
+\<Longrightarrow> (\<forall>k. pr0 \<le> k \<and> k < pr1 \<longrightarrow> L (tick_of_price k) = 0)
+\<Longrightarrow> gSum (fee_growth zeroForOne factor L pr0 pr1) = 0\<close>
+  subgoal premises prems proof -
+    have \<open>MIN_PRICE \<le> pr0 \<Longrightarrow> Is_partition tick_of_price pr0 pr1 ps
+    \<Longrightarrow> (\<forall>k. pr0 \<le> k \<and> k < pr1 \<longrightarrow> L (tick_of_price k) = 0)
+    \<Longrightarrow> gSum (partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price pr0 pr1 ps) = (0,0)\<close> for ps
+    apply (induct ps arbitrary: pr0; simp add: zero_prod_def)
+       apply (metis Const_Interval_LE fee_growth_in_a_tick_0 gSum_fee_growth_in_a_tick less_eq_real_def prems(1) zero_fun)
+      using plus_prod_def
+      by (smt (verit) Const_Interval_LE Is_partition_imp_LE add_cancel_right_right fee_growth_in_a_tick_0 gSum_fee_growth_in_a_tick prems(1) sum.neutral zero_fun)
+    then show ?thesis unfolding zero_prod_def
+      by (metis Partition_always_exists' dual_order.strict_trans1 growth_irrelavent_with_partition prems(1) prems(2) price_of_L0)
+  qed .
+
+lemma gSum_fee_growth:
+  \<open> MIN_PRICE \<le> pr0 \<and> pr0 \<le> pr1 \<and> pr1 < MAX_PRICE
+\<Longrightarrow> (\<forall>k. pr0 \<le> k \<and> k < pr1 \<longrightarrow> 0 < L (tick_of_price k))
+\<Longrightarrow> gSum (fee_growth zeroForOne factor L pr0 pr1) =
+        (if zeroForOne then ( (1/pr0 - 1/pr1) * factor ,0) else (0, (pr1 - pr0) * factor))\<close>
+  unfolding fee_growth_def
+  subgoal premises prems proof -
+    have \<open>MIN_PRICE \<le> pr0 \<Longrightarrow> Is_partition tick_of_price pr0 pr1 ps
+    \<Longrightarrow> (\<forall>k. pr0 \<le> k \<and> k < pr1 \<longrightarrow> 0 < L (tick_of_price k))
+    \<Longrightarrow> gSum (partition_intergral (fee_growth_in_a_tick zeroForOne factor L)  tick_of_price pr0 pr1 ps)
+          = (if zeroForOne then ( (1/pr0 - 1/pr1) * factor ,0) else (0, (pr1 - pr0) * factor))\<close> for ps
+      apply (induct ps arbitrary: pr0; simp)
+       apply (simp add: Const_Interval_LE prems)
+      using Const_Interval_LE apply fastforce
+      apply auto
+      apply (smt (verit, best) Const_Interval_LE Is_partition_imp_LE add_Pair gSum_fee_growth_in_a_tick left_diff_distrib prems(1))
+      by (smt (verit, del_insts) Const_Interval_LE Is_partition_imp_LE add_Pair gSum_fee_growth_in_a_tick left_diff_distrib prems(1))
+    then show ?thesis
+      by (metis Partition_always_exists' fee_growth_def growth_irrelavent_with_partition less_max_iff_disj max.order_iff prems price_of_L0)
+  qed .
+
+lemma fee_growth_eq_0:
+  \<open> MIN_PRICE \<le> pr0 \<and> pr0 \<le> pr1 \<and> pr1 < MAX_PRICE
+\<Longrightarrow> k < tick_of_price pr0 \<or> tick_of_price pr1 < k \<or> (pr1 = price_of k)
+\<Longrightarrow> fee_growth zeroForOne factor L pr0 pr1 k = 0\<close>
+  subgoal premises prems
+proof -
+  have \<open>MIN_PRICE \<le> pr0 \<and> pr0 \<le> pr1 \<and> pr1 < MAX_PRICE
+\<Longrightarrow> k < tick_of_price pr0 \<or> tick_of_price pr1 < k \<or> (pr1 = price_of k)
+\<Longrightarrow> Is_partition tick_of_price pr0 pr1 ps
+\<Longrightarrow> partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price pr0 pr1 ps k = (0,0)\<close>
+    for ps
+    apply (induct ps arbitrary: pr0; auto simp add: fee_growth_in_a_tick_def zero_prod_def)
+    apply (meson dual_order.strict_trans1 less_le_not_le price_of_L0 tick_of_price_LE_mono)
+    apply (smt (verit, best) price_of_L0 tick_of_price_LE_mono)
+    apply (meson dual_order.strict_trans1 order_antisym_conv price_of_L0 price_of_tick)
+    apply (meson dual_order.strict_trans1 order_antisym_conv price_of_L0 price_of_tick)
+    apply (smt (z3) Const_Interval_LE Is_partition_imp_LE add_0 fun_upd_other plus_fun_def price_of_L0 tick_of_price_LE_mono)
+    apply (smt (z3) Const_Interval_LE Is_partition_imp_LE add_0 fun_upd_other plus_fun_def price_of_L0 tick_of_price_LE_mono)
+    apply (metis (no_types, opaque_lifting) Const_Interval_def Is_partition_le_last comm_monoid_add_class.add_0 fun_updt_0_0 order_less_le_trans order_trans price_of_L0 tick_of_price_LE_mono zero_prod_def)
+    apply (smt (z3) Const_Interval_LE Is_partition_imp_LE add_0 fun_upd_other plus_fun_def price_of_L0 tick_of_price_LE_mono)
+    apply (smt (verit) Const_Interval_LE Is_partition_imp_LE add_0 fun_updt_0_0 zero_prod_def)
+    apply (metis (no_types, opaque_lifting) Const_Interval_LE Is_partition_imp_LE add.right_neutral dual_order.strict_trans2 fun_upd_other plus_fun_def price_of_L0 tick_of_price_LE_mono verit_comp_simplify1(3) zero_fun zero_prod_def)
+    apply (smt (verit) Const_Interval_LE Is_partition_imp_LE add_0 fun_updt_0_0 zero_prod_def)
+    apply (metis (no_types, opaque_lifting) Const_Interval_LE Is_partition_imp_LE add_0 dual_order.strict_trans2 fun_upd_other plus_fun_def price_of_L0 tick_of_price_LE_mono verit_comp_simplify1(3))
+    apply (metis (no_types, opaque_lifting) Const_Interval_def Is_partition_imp_LE comm_monoid_add_class.add_0 dual_order.trans fun_updt_0_0 zero_prod_def)
+    apply (smt (z3) Const_Interval_LE Is_partition_imp_LE add.commute add.right_neutral fee_growth_in_a_tick_0 fee_growth_in_a_tick_def fun_upd_other plus_fun_def price_of_L0 price_of_tick)
+    apply (smt (verit) Const_Interval_LE Is_partition_imp_LE add_0 fun_updt_0_0 zero_prod_def)
+    by (smt (z3) Const_Interval_LE Is_partition_imp_LE add.right_neutral fun_upd_other fun_upd_same mult_less_0_iff plus_fun_def price_of_L0 price_of_tick zero_fun zero_less_mult_iff zero_prod_def)
+  then show ?thesis
+    unfolding fee_growth_def zero_prod_def
+    by (metis Partition_always_exists' dual_order.order_iff_strict dual_order.strict_trans fee_growth_def growth_irrelavent_with_partition prems(1) prems(2) price_of_L0)
+qed .
+
+lemma fee_growth_always_ge_0:
+  \<open> 0 < l \<and> l \<le> u
+\<Longrightarrow> 0 \<le> factor
+\<Longrightarrow> 0 \<le> fee_growth zeroForOne factor L l u k\<close>
+  unfolding fee_growth_def
+  subgoal premises prems
+  proof -
+    have \<open>0 < l \<and> l \<le> u
+    \<Longrightarrow> Is_partition tick_of_price l u ps
+    \<Longrightarrow> 0 \<le> partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u ps k\<close> for ps
+      apply (induct ps arbitrary: l, auto simp add: fee_growth_in_a_tick_def zero_prod_def plus_fun less_eq_prod_def)
+      apply (simp add: frac_le prems(2))
+      using prems(2) apply force
+      apply (smt (verit, best) Const_Interval_LE Is_partition_imp_LE add_0 zero_prod_def)
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      apply (simp add: Const_Interval_def Is_partition_le_last frac_le prems(2))
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      apply (simp add: Const_Interval_def Is_partition_le_last prems(2))
+      apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+      by (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
+    then show ?thesis
+      using Partition_always_exists' fee_growth_def growth_irrelavent_with_partition prems(1) by fastforce
+  qed .
+
+
+abbreviation XAND (infixr "XAND" 35) where \<open>A XAND B \<equiv> (A \<and> B \<or> \<not> A \<and> \<not> B)\<close>
 
 definition swap_step :: \<open>real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<times> real \<times> real \<times> real\<close>
   \<comment> \<open>As described in the white paper.
@@ -350,31 +639,41 @@ definition swap_step :: \<open>real \<Rightarrow> real \<Rightarrow> real \<Righ
     let zeroForOne = (price >= price_target) ; \<comment> \<open>whether using token0 to buy token1\<close>
         exactIn = amount_remain \<ge> 0 ;
         amount_remain' = if exactIn then amount_remain * (1 - \<gamma>) else amount_remain ;
-        max_amount = if zeroForOne XOR exactIn then L / price_target - L / price else L * (price_target - price) ;
+        max_amount = if zeroForOne XAND exactIn then L / price_target - L / price else L * (price_target - price) ;
         \<Delta>amount = if exactIn then min amount_remain' max_amount else max amount_remain' max_amount ;
-        next_price = if L = 0 then price_target else if zeroForOne XOR exactIn then (L / (L / price + \<Delta>amount)) else price + \<Delta>amount / L ;
+        next_price = if L = 0 then price_target else if zeroForOne XAND exactIn then (L / (L / price + \<Delta>amount)) else price + \<Delta>amount / L ;
         amountIn = (if zeroForOne then L / next_price - L / price else L * (next_price - price)) ;
           \<comment> \<open>L / price is the reserve amount of token0, and L * price is that of token 1\<close>
         amountOut = (if zeroForOne then L * (price - next_price) else L / price - L / next_price) ;
-        fee = amountIn * \<gamma> / (1 - \<gamma>)
-     in (next_price, amountIn, amountOut, fee)
+        feeAmout = amountIn * \<gamma> / (1 - \<gamma>)
+     in (next_price, amountIn, amountOut, feeAmout)
 )\<close>
 
-lemma
+lemma swap_step_reserve_change_zeroForOne:
   \<open> (price >= price_target)
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain \<gamma>
-\<Longrightarrow> (amountIn, -amountOut) = reserve_change_in_a_step L price next_price\<close>
-  unfolding reserve_change_in_a_step_def swap_step_def
-apply (auto simp add: min_def Let_def max_def)
-  apply (simp add: minus_mult_right)
-  by (metis minus_diff_eq mult_minus_right)
-
-lemma
-  \<open> \<not> (price >= price_target)
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain \<gamma>
-\<Longrightarrow> (-amountOut, amountIn) = reserve_change_in_a_step L price next_price\<close>
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain \<gamma>
+\<Longrightarrow> (amountIn, amountOut) = reserve_change_in_a_step L next_price price\<close>
   unfolding reserve_change_in_a_step_def swap_step_def
   by (auto simp add: min_def Let_def max_def)
+
+lemma swap_step_fee_amout:
+  \<open> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain \<gamma>
+\<Longrightarrow> amountIn * \<gamma> / (1 - \<gamma>) = feeAmout\<close>
+  unfolding swap_step_def
+  by (auto simp add: Let_def)
+
+lemma swap_step_reserve_change_not_zeroForOne:
+  \<open> \<not> (price >= price_target)
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain \<gamma>
+\<Longrightarrow> (amountOut, amountIn) = reserve_change_in_a_step L price next_price\<close>
+  unfolding reserve_change_in_a_step_def swap_step_def
+  by (auto simp add: min_def Let_def max_def)
+
+lemma swap_step_zero_liquidity:
+  \<open>(next_price, amountIn, amountOut, feeAmout) = swap_step price price_target 0 amount_remain \<gamma>
+\<Longrightarrow> next_price = price_target\<close>
+  unfolding swap_step_def
+  by (auto simp add: Let_def)
 
 (* In swap_step, amount_remain cannot be zero *)
 
@@ -396,8 +695,8 @@ declare [[linarith_split_limit = 30]]
 
 lemma swap_step_fee_Le_0:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
-\<Longrightarrow> 0 \<le> fee\<close>
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> 0 \<le> feeAmout\<close>
   unfolding swap_step_def Let_def
   apply auto
   apply (smt (verit, ccfv_SIG) divide_nonpos_pos frac_le mult.commute mult_less_0_iff pos_divide_le_eq times_divide_eq_left)
@@ -424,7 +723,7 @@ lemma price_inequaty2':
 lemma swap_step_next_price_Le:
   \<open>0 < min_price \<and> min_price \<le> price \<and> min_price < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
 \<Longrightarrow> amount_remain \<noteq> 0
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
 \<Longrightarrow> min_price < next_price\<close>
   unfolding swap_step_def Let_def
   apply (cases \<open>price >= price_target\<close>; auto simp add: min_def max_def)
@@ -452,7 +751,7 @@ lemma swap_step_next_price_Le:
 lemma swap_step_next_price_Le_MIN_PRICE:
   \<open>MIN_PRICE \<le> price \<and> MIN_PRICE < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
 \<Longrightarrow> amount_remain \<noteq> 0
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
 \<Longrightarrow> MIN_PRICE < next_price\<close>
   using price_of_L0 swap_step_next_price_Le by blast
 
@@ -460,7 +759,7 @@ lemma swap_step_next_price_Gt:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
 \<Longrightarrow> price \<le> max_price \<and> price_target < max_price
 \<Longrightarrow> amount_remain \<noteq> 0
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
 \<Longrightarrow> next_price < max_price\<close>
   unfolding swap_step_def Let_def
   apply (cases \<open>price >= price_target\<close>; auto simp add: min_def max_def)
@@ -477,7 +776,7 @@ lemma swap_step_next_price_Gt_MAX:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
 \<Longrightarrow> price \<le> MAX_PRICE \<and> price_target < MAX_PRICE
 \<Longrightarrow> amount_remain \<noteq> 0
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
 \<Longrightarrow> next_price < MAX_PRICE\<close>
   using swap_step_next_price_Gt .
 
@@ -485,7 +784,7 @@ lemma swap_step_next_price_Gt_MAX:
 
 lemma swap_step_next_price_Le_0:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
 \<Longrightarrow> 0 < next_price\<close>
   unfolding swap_step_def Let_def
   apply (auto)
@@ -497,7 +796,7 @@ lemma swap_step_next_price_Le_0:
 lemma swap_step_next_price_LE_price:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
 \<Longrightarrow> price_target \<le> price
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
 \<Longrightarrow> next_price \<le> price\<close>
   unfolding swap_step_def Let_def
   apply (auto simp add: min_def max_def)
@@ -514,7 +813,7 @@ lemma swap_step_next_price_LE_price:
 lemma swap_step_price_target_LE_next_price:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
 \<Longrightarrow> price_target \<le> price
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
 \<Longrightarrow> price_target \<le> next_price\<close>
   unfolding swap_step_def Let_def
   apply (auto simp add: min_def max_def)
@@ -531,7 +830,7 @@ lemma swap_step_price_target_LE_next_price:
 lemma swap_step_price_LE_next_price:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
 \<Longrightarrow> price < price_target
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
 \<Longrightarrow> price \<le> next_price\<close>
   unfolding swap_step_def Let_def
   apply (auto simp add: min_def max_def not_le)
@@ -545,7 +844,7 @@ lemma swap_step_price_LE_next_price:
 lemma swap_step_next_price_LE_price_target:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
 \<Longrightarrow> price < price_target
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
 \<Longrightarrow> next_price \<le> price_target\<close>
   unfolding swap_step_def Let_def
   apply (auto simp add: min_def max_def not_le)
@@ -556,7 +855,7 @@ lemma swap_step_next_price_LE_price_target:
 
 lemma swap_step_amountIn_Le_0:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
 \<Longrightarrow> 0 \<le> amountIn\<close>
   unfolding swap_step_def Let_def
   apply auto
@@ -567,7 +866,7 @@ lemma swap_step_amountIn_Le_0:
 
 lemma swap_step_amountOut_0:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
-\<Longrightarrow> (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips
+\<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
 \<Longrightarrow> 0 \<le> amountOut\<close>
 unfolding swap_step_def Let_def
   apply (clarsimp simp add: max_def min_def)
@@ -591,9 +890,9 @@ proc computeSwapStep:
   input \<open>price \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> price_target \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> L \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> amount_remain \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> feePips \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   premises \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L\<close>
       and  \<open>0 < feePips \<and> feePips < 1\<close>
-  output \<open>next_price \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> amountIn \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> amountOut \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> fee \<Ztypecolon> \<v>\<a>\<l> \<real>
-          \<s>\<u>\<b>\<j> next_price amountIn amountOut fee.
-          (next_price, amountIn, amountOut, fee) = swap_step price price_target L amount_remain feePips\<close>
+  output \<open>next_price \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> amountIn \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> amountOut \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> feeAmout \<Ztypecolon> \<v>\<a>\<l> \<real>
+          \<s>\<u>\<b>\<j> next_price amountIn amountOut feeAmout.
+          (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips\<close>
   is [routine]
   \<medium_left_bracket>
     var next_price, feeAmount ;;
@@ -605,10 +904,10 @@ proc computeSwapStep:
 
     define amount_remain' where \<open>amount_remain' = (if ?exactIn then amount_remain * (1 - feePips) else amount_remain)\<close>
     define max_amount where \<open>max_amount =
-        (if ?zeroForOne XOR ?exactIn then L / price_target - L / price else L * (price_target - price))\<close>
+        (if ?zeroForOne XAND ?exactIn then L / price_target - L / price else L * (price_target - price))\<close>
     define \<Delta>amount where \<open>\<Delta>amount = (if ?exactIn then min amount_remain' max_amount else max amount_remain' max_amount)\<close>
     define next_price where \<open>next_price =
-        (if L = 0 then price_target else if ?zeroForOne XOR ?exactIn then (L / (L / price + \<Delta>amount)) else price + \<Delta>amount / L)\<close> 
+        (if L = 0 then price_target else if ?zeroForOne XAND ?exactIn then (L / (L / price + \<Delta>amount)) else price + \<Delta>amount / L)\<close> 
     define amountIn where \<open>amountIn =
         (if ?zeroForOne then L / next_price - L / price else L * (next_price - price))\<close>
     define amountOut where \<open>amountOut =

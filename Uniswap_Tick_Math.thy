@@ -39,7 +39,7 @@ lemma price_of_smono:
 definition \<open>tick_of_price p = (@t. price_of t \<le> p \<and> p < price_of (t+1)) \<close>
 
 
-lemma tick_of_price: \<open>tick_of_price (price_of t) = t\<close>
+lemma tick_of_price[simp]: \<open>tick_of_price (price_of t) = t\<close>
   unfolding tick_of_price_def
   by (smt (z3) price_of_smono some_eq_imp)
 

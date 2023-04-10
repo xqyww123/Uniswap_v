@@ -19,15 +19,28 @@ setup \<open>Sign.mandatory_path "growth"\<close>
 
 definition \<open>fee0 (x::growth) = (case x of (a,b) \<Rightarrow> a)\<close>
 definition \<open>map_fee0 f (x::growth) = (case x of (a,b) \<Rightarrow> ((f a,b) :: growth))\<close>
-lemma [simp]: \<open>growth.fee0 (a,b) = a\<close> unfolding growth.fee0_def by simp
-lemma [simp]: \<open>growth.map_fee0 f (a,b) = (f a,b)\<close> unfolding growth.map_fee0_def by simp
-lemma [simp]: \<open>growth.fee0 0 = 0\<close> unfolding zero_prod_def by simp
+lemma fee0[simp]: \<open>growth.fee0 (a,b) = a\<close> unfolding growth.fee0_def by simp
+lemma map_fee0[simp]: \<open>growth.map_fee0 f (a,b) = (f a,b)\<close> unfolding growth.map_fee0_def by simp
+lemma fee0_0[simp]: \<open>growth.fee0 0 = 0\<close> unfolding zero_prod_def by simp
+
+interpretation fee0: homo_add \<open>growth.fee0\<close> by (standard; case_tac x; case_tac y; simp)
+interpretation fee0_funcomp: homo_add \<open>(o) growth.fee0\<close> ..
+interpretation fee0: homo_zero \<open>growth.fee0\<close> by (standard; simp add: zero_prod_def)
+interpretation fee0_funcomp: homo_zero \<open>(o) growth.fee0\<close> ..
+
 
 definition \<open>fee1 (x::growth) = (case x of (a,b) \<Rightarrow> b)\<close>
 definition \<open>map_fee1 f (x::growth) = (case x of (a,b) \<Rightarrow> ((a,f b) :: growth))\<close>
-lemma [simp]: \<open>growth.fee1 (a,b) = b\<close> unfolding growth.fee1_def by simp
-lemma [simp]: \<open>growth.map_fee1 f (a,b) = (a,f b)\<close> unfolding growth.map_fee1_def by simp
-lemma [simp]: \<open>growth.fee1 0 = 0\<close> unfolding zero_prod_def by simp
+lemma fee1[simp]: \<open>growth.fee1 (a,b) = b\<close> unfolding growth.fee1_def by simp
+lemma map_fee1[simp]: \<open>growth.map_fee1 f (a,b) = (a,f b)\<close> unfolding growth.map_fee1_def by simp
+lemma fee1_0[simp]: \<open>growth.fee1 0 = 0\<close> unfolding zero_prod_def by simp
+
+interpretation fee1: homo_add \<open>growth.fee1\<close> by (standard; case_tac x; case_tac y; simp)
+interpretation fee1_funcomp: homo_add \<open>(o) growth.fee1\<close> ..
+interpretation fee1: homo_zero \<open>growth.fee1\<close> by (standard; simp add: zero_prod_def)
+interpretation fee1_funcomp: homo_zero \<open>(o) growth.fee1\<close> ..
+
+
 
 (*
 definition \<open>tickCumulative (x::growth) = (case x of (a,b,c,d,e) \<Rightarrow> c)\<close>

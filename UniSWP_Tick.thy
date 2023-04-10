@@ -131,14 +131,6 @@ lemma [\<phi>reason 3000, \<phi>inhabitance_rule]:
     @action to RawTicks\<close>
   \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>. .
 
-lemma grow_current_tick_\<phi>app:
-  \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> 0 \<le> \<Delta>
-\<Longrightarrow> (Lg, L, g, i, \<delta>) \<Ztypecolon> Ticks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, L, g(i := g i + \<Delta>), i, \<delta>) \<Ztypecolon> Ticks \<close>
-  \<medium_left_bracket> to \<open>RawTicks\<close> \<medium_right_bracket>
-    using \<phi> apply (auto simp add: Invt_Ticks_def Invt_A_Tick_def growth_outside_def)
-    apply presburger apply (cases \<open>g i\<close>; cases \<Delta>; simp add: zero_prod_def less_eq_prod_def)
-    by (smt (verit) old.prod.case) .
-
 end
 
 section \<open>Axiomatic Semantics of Abstract Operations\<close>
@@ -271,6 +263,12 @@ lemma growth_outside_shift_mono:
 \<Longrightarrow> growth_outside growth i \<delta> j = growth_outside growth i \<delta> k\<close>
   unfolding growth_outside_def by auto
 
+lemma sum_plus_fun[simp]:
+  \<open>finite S \<Longrightarrow> sum (f + g) S = sum f S + sum g S\<close>
+  unfolding plus_fun_def
+  using sum.distrib by blast
+
+
 abbreviation \<open>next_initialized Lg i j \<equiv> (\<forall>k. i < k \<and> k < j \<longrightarrow> Lg k = 0)\<close>
 
 lemma (in Tick_resource) shift_current_tick_\<phi>app:
@@ -280,6 +278,35 @@ lemma (in Tick_resource) shift_current_tick_\<phi>app:
   \<medium_left_bracket> to \<open>RawTicks\<close> \<medium_right_bracket>
     using \<phi> by (auto simp add: Invt_Ticks_def Invt_A_Tick_def,
                 smt (verit) Invt_A_Tick_def Invt_Ticks_def growth_outside_def option.pred_inject(1) option.pred_inject(2) the_\<phi>lemmata) .
+
+lemma (in Tick_resource) shift_current_tick_\<Delta>_\<phi>app:
+  \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> j \<in> {MIN_TICK-1..MAX_TICK}
+\<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> (if j \<le> i then next_initialized Lg j (i+1) else next_initialized Lg i (j+1))
+\<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> (if j \<le> i then (\<forall>k. k < j \<or> k > i \<longrightarrow> \<Delta> k = 0) else (\<forall>k. k < i \<or> k > j \<longrightarrow> \<Delta> k = 0))
+\<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> (\<forall>k. 0 \<le> \<Delta> k)
+\<Longrightarrow> (Lg, L, g, i, \<delta>) \<Ztypecolon> Ticks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, L, g + \<Delta>, j, \<delta>) \<Ztypecolon> Ticks \<close>
+  \<medium_left_bracket> to \<open>RawTicks\<close> \<medium_right_bracket>
+    using \<phi> apply (auto simp add: Invt_Ticks_def Invt_A_Tick_def plus_fun)
+    subgoal for i' apply (cases \<open>\<delta> i'\<close>; clarsimp simp add: growth_outside_def)
+      apply (cases \<open>j \<le> i\<close>; simp) 
+      apply (cases \<open>i' \<le> j\<close>; simp)
+      apply (smt (verit, best) option.pred_inject(2))
+      apply (cases \<open>i' \<le> i\<close>; simp)
+       apply (smt (verit, best) option.pred_inject(2))
+      apply (cases \<open>i' \<le> i\<close>, simp)
+      apply (smt (verit, best) option.pred_inject(2))
+      by (smt (verit) option.distinct(1) option.pred_inject(2))
+    by (meson add_order_0_class.add_nonneg_nonneg)
+      .
+
+(* lemma (in Tick_resource) shift_current_tick_\<phi>app:
+  \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> j \<in> {MIN_TICK-1..MAX_TICK}
+\<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> (if j \<le> i then next_initialized Lg j (i+1) else next_initialized Lg i (j+1))
+\<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> (if i \<le> j then (\<forall>k. k < i \<or> k > j \<longrightarrow> \<Delta> k = 0) else (\<forall>k. k < j \<or> k \<ge> i \<longrightarrow> \<Delta> k = 0)
+\<Longrightarrow> (Lg, L, g, i, \<delta>) \<Ztypecolon> Ticks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, L, g, j, \<delta>) \<Ztypecolon> Ticks \<close>
+  \<medium_left_bracket> to \<open>RawTicks\<close> \<medium_right_bracket>
+*)
+
 
 lemma sum_update:
   \<open> finite S
@@ -312,7 +339,7 @@ proc getFeeGrowthInside:
 
     obtain \<delta>_lower \<delta>_upper where \<delta>_lower[simp]: \<open>\<delta> lower = Some \<delta>_lower\<close>
                             and \<delta>_upper[simp]: \<open>\<delta> upper = Some \<delta>_upper\<close>
-      by (metis Invt_Ticks_initialization not_less_iff_gr_or_eq option.exhaust the_\<phi>(2) the_\<phi>(3) the_\<phi>lemmata(7))
+      by (metis Invt_Ticks_initialization not_None_eq not_less_iff_gr_or_eq the_\<phi>(12) the_\<phi>(13) the_\<phi>lemmata(7))
 
     note lower_simps[simp] =
           \<open>Invt_Ticks current Lg liq growth \<delta> ticks\<close>[unfolded Invt_Ticks_def Invt_A_Tick_def
@@ -351,17 +378,20 @@ thm getFeeGrowthInside_\<phi>app
 (*\<heavy_comma>
           liq i - liq current \<Ztypecolon> \<v>\<a>\<l> \<int> *)
 
+declare Invt_Ticks_def[simp] Invt_A_Tick_def[simp]
+
 proc tick_cross:
   premises \<open>0 < Lg i\<close>
     and    \<open>if i \<le> j then next_initialized Lg i (j+1) else next_initialized Lg j i\<close>
-  premises \<open>fee0 = global_fee0_growth growth\<close> (*global_fee0 is the sum of all the growth at every ticks*)
-    and    \<open>fee1 = global_fee1_growth growth\<close>
+    and    \<open>if i \<le> j then (\<forall>k. k < i \<or> k > j \<longrightarrow> \<Delta> k = 0) else (\<forall>k. k < j \<or> k \<ge> i \<longrightarrow> \<Delta> k = 0)\<close>
+    and    \<open>(\<forall>k. 0 \<le> \<Delta> k)\<close>
+  premises \<open>(fee0, fee1) = gSum growth + gSum \<Delta>\<close> (*global_fee0 is the sum of all the growth at every ticks*)
 (*    and    \<open>sec_per_liq = growth.secondsPerLiquidity (gSum growth)\<close>
     and    \<open>tick_cumu = growth.tickCumulative (gSum growth)\<close>
     and    \<open>time = growth.seconds (gSum growth)\<close>*)
   input  \<open>(Lg, liq, growth, j, \<delta>) \<Ztypecolon> Ticks \<heavy_comma> i \<Ztypecolon> \<v>\<a>\<l> Tick \<heavy_comma> fee0 \<Ztypecolon> \<v>\<a>\<l> \<real> \<heavy_comma> fee1 \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
         (* sec_per_liq \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> tick_cumu \<Ztypecolon> \<v>\<a>\<l> \<int> \<heavy_comma> time \<Ztypecolon> \<v>\<a>\<l> \<int> *)
-  output \<open>(Lg, liq, growth, (if i \<le> j then i - 1 else i), \<delta>) \<Ztypecolon> Ticks\<heavy_comma> liq i - liq (i - 1) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
+  output \<open>(Lg, liq, growth + \<Delta>, (if i \<le> j then i - 1 else i), \<delta>) \<Ztypecolon> Ticks\<heavy_comma> liq i - liq (i - 1) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   is [routine]
   \<medium_left_bracket> to \<open>RawTicks\<close> \<exists>ticks
   obtain fee0' fee1' (*spl' tc' time'*) liqG' liqN' init'
@@ -373,7 +403,40 @@ proc tick_cross:
      (* set_secondsPerLiquidity ($sec_per_liq sub ($i get_secondsPerLiquidity))
         set_tickCumulative ($tick_cumu sub ($i get_tickCumulative))
         set_seconds ($time sub ($i get_seconds))*) ;;
+  have x1: \<open>i \<le> j \<Longrightarrow> \<forall>k \<in> {MIN_TICK-1..<i}. \<Delta> k = 0\<close>
+    using the_\<phi>(15) by force
+  then have \<open>i \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK-1..<i} = 0\<close>
+    using sum.neutral by blast  
+  then have x2: \<open>i \<le> j \<Longrightarrow> sum \<Delta> {i..MAX_TICK} = gSum \<Delta>\<close>
+    by (metis diff_mono diff_zero linordered_nonzero_semiring_class.zero_le_one sum_sub_1 the_\<phi>lemmata(1) the_\<phi>lemmata(2))
+  have x3: \<open>i \<le> j \<Longrightarrow> i' \<le> i \<Longrightarrow> sum \<Delta> {MIN_TICK - 1..<i'} = 0\<close> for i'
+    by (simp add: x1)
+  have x1': \<open>i \<le> j \<Longrightarrow> \<forall>k \<in> {j<..MAX_TICK}. \<Delta> k = 0\<close>
+    using the_\<phi>(15) by force
+  have x4: \<open>i \<le> j \<Longrightarrow> j < i' \<Longrightarrow> sum \<Delta> {i'..MAX_TICK} = 0\<close> for i'
+    by (simp add: the_\<phi>(15))
 
+  have y1: \<open>\<not> i \<le> j \<Longrightarrow> \<forall>k \<in> {i..MAX_TICK}. \<Delta> k = 0\<close>
+    by (meson atLeastAtMost_iff the_\<phi>(15))
+  then have y2: \<open>\<not> i \<le> j \<Longrightarrow> sum \<Delta> {i..MAX_TICK} = 0\<close>
+    using sum.neutral by blast  
+  then have y3: \<open>\<not> i \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK-1..<i} = gSum \<Delta>\<close>
+    by (smt (verit, ccfv_threshold) diff_zero sum_sub_2 the_\<phi>lemmata(1) the_\<phi>lemmata(2))
+  have y4: \<open>\<not> i \<le> j \<Longrightarrow> i' \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK - 1..<i'} = 0\<close> for i'
+    using the_\<phi>(15) by auto
+  have y5: \<open>\<not> i \<le> j \<Longrightarrow> i < i' \<Longrightarrow> sum \<Delta> {i'..MAX_TICK} = 0\<close> for i'
+    using the_\<phi>(15) by auto
+
+  have a1: \<open>\<delta> i = Some (a, b) \<Longrightarrow> tick_info.initialized (ticks i)\<close> for a b i
+    using the_\<phi>lemmata(3) by blast
+  have a2: \<open>\<delta> i = Some (a, b) \<Longrightarrow> tick_info.growth (ticks i) = growth_outside growth i (a,b) j\<close> for i a b
+    using the_\<phi>lemmata(3) by force
+
+  have t1[simp]:
+      \<open>(fee0 - fee0', fee1 - fee1') = (fee0, fee1) - (fee0', fee1')\<close>
+    by simp
+  note diff_Pair[simp del] uminus_Pair[simp del]
+(*
   have th1[simp]:
         \<open>\<And>A. (growth.fee0 A - fee0', growth.fee1 A - fee1') = A - (fee0', fee1')\<close>
         (* (growth.fee0 A - fee0', growth.fee1 A - fee1', growth.tickCumulative A - spl',
@@ -381,23 +444,41 @@ proc tick_cross:
           = A - (fee0', fee1', spl', tc', time') *)
     by (case_tac A; simp)
   note th2 = \<open>Invt_Ticks j Lg liq growth \<delta> ticks\<close>[unfolded Invt_Ticks_def Invt_A_Tick_def]
-  note th3 = th2[THEN conjunct1] ;;
-
+  note th3 = th2[THEN conjunct1] ;; *)
+  ;;
   $i get_liquidityNet
   \<medium_right_bracket> unfolding Invt_Ticks_def Invt_A_Tick_def
-    using th2 th3[THEN spec[where x=i]]
-    apply (auto)
-    apply force
-    apply (smt (verit, ccfv_SIG) growth_outside_def option.pred_inject(1) option.pred_inject(2) th3 the_\<phi>(3))
-    using the_\<phi>lemmata(1) apply linarith
-    apply (smt (verit, best) growth_outside_shift_mono option.pred_inject(1) option.pred_inject(2) th3 the_\<phi>(3))
-    apply (metis less_numeral_extra(3) th2 the_\<phi>(2))
-    apply (metis less_numeral_extra(3) th3 the_\<phi>(2))
-    using the_\<phi>lemmata(1) apply linarith
-    apply (metis less_numeral_extra(3) th2 the_\<phi>(2))
-    apply (metis less_numeral_extra(3) th3 the_\<phi>(2))
-    by (metis order_less_irrefl th2 the_\<phi>(2)) .
-
+    apply (auto simp add: \<phi> plus_fun)
+    apply (metis Tick_i the_\<phi>(10) tick_info.sel(2))
+    apply (metis Tick_i the_\<phi>(10) tick_info.sel(3))
+    apply (insert a2[of i], cases \<open>\<delta> i\<close>; clarsimp simp add: growth_outside_def x2)
+    using the_\<phi>lemmata(1) the_\<phi>lemmata(2) apply auto[1]
+    using the_\<phi>lemmata(3) apply fastforce
+    using a1 apply fastforce
+    subgoal for i' apply (insert a2[of i'], cases \<open>i' < i\<close>)
+      apply (cases \<open>\<delta> i'\<close>; clarsimp simp add: growth_outside_def x2 x3)
+      apply (cases \<open>i' \<le> j\<close>)
+      using that(2) the_\<phi>lemmata(6) apply force
+      by (cases \<open>\<delta> i'\<close>; clarsimp simp add: growth_outside_def x4)
+    using the_\<phi>lemmata(1) apply fastforce
+    using the_\<phi>lemmata(2) apply force
+    apply (simp add: add_order_0_class.add_nonneg_nonneg the_\<phi>(14) the_\<phi>lemmata(10))
+    apply (metis Tick_i the_\<phi>(10) tick_info.sel(3))
+    apply (metis Tick_i the_\<phi>(10) tick_info.sel(2))
+    apply (metis Tick_i the_\<phi>(10) tick_info.sel(3))
+    apply (insert a2[of i], cases \<open>\<delta> i\<close>; clarsimp simp add: growth_outside_def x2 y3)
+    using the_\<phi>lemmata(2) the_\<phi>lemmata(4) apply force
+    using the_\<phi>lemmata(3) apply fastforce
+    using a1 apply fastforce
+    subgoal for i' apply (insert a2[of i'], cases \<open>i' \<le> j\<close>)
+       apply (cases \<open>\<delta> i'\<close>; clarsimp simp add: growth_outside_def y4)
+      apply (cases \<open>i' \<le> i\<close>)
+      using the_\<phi>(16) the_\<phi>lemmata(6) apply force
+      by (cases \<open>\<delta> i'\<close>; clarsimp simp add: growth_outside_def y5)
+    using the_\<phi>lemmata(1) apply force
+    apply (simp add: add_order_0_class.add_nonneg_nonneg the_\<phi>(14) the_\<phi>lemmata(10))
+    by (metis Tick_i the_\<phi>(10) tick_info.sel(3))
+  .
 
 end
 
