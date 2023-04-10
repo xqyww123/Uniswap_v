@@ -401,9 +401,13 @@ lemma reserve_change_irrelavent_with_partition:
   unfolding reserve_change_def
   using partition_intergral_irrelavent_with_parition' reserve_change_Is_linear_sum by blast
 
-definition fee_growth
-  where \<open>fee_growth zeroForOne factor L l u
+definition fee_growth'
+  where \<open>fee_growth' zeroForOne factor L l u
     = partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u (Eps (Is_key_partition (tick_of_price) l u))\<close>
+
+abbreviation fee_growth
+  where \<open>fee_growth zeroForOne factor L pr0 pr1 \<equiv>
+    (if zeroForOne then fee_growth' True factor L pr1 pr0 else fee_growth' False factor L pr0 pr1)\<close>
 
 lemma fee_growth_Is_linear_sum:
   \<open>Is_linear_sum (fee_growth_in_a_tick zeroForOne factor L)\<close>
@@ -412,8 +416,8 @@ lemma fee_growth_Is_linear_sum:
   
 lemma growth_irrelavent_with_partition:
   \<open> Is_partition tick_of_price l u ps
-\<Longrightarrow> partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u ps = fee_growth zeroForOne factor L l u\<close>
-  unfolding fee_growth_def
+\<Longrightarrow> partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u ps = fee_growth' zeroForOne factor L l u\<close>
+  unfolding fee_growth'_def
   using fee_growth_Is_linear_sum partition_intergral_irrelavent_with_parition' by blast
 
 lemma Const_Interval_x_x:
@@ -432,7 +436,7 @@ lemma reserve_change_0[simp]:
   by (metis (no_types, lifting) Const_Interval_x_x Is_key_partition.simps(1) Key_partition_uniq partition_intergral.simps(1) reserve_change_def reserve_change_in_a_tick_0 someI_ex)
 
 lemma fee_growth_0[simp]:
-  \<open>fee_growth zeroForOne factor L x x = 0\<close>
+  \<open>fee_growth' zeroForOne factor L x x = 0\<close>
   by (metis Const_Interval_x_x' Is_key_partition.simps(1) Is_key_partition_implies_Is_partition fee_growth_in_a_tick_0 growth_irrelavent_with_partition partition_intergral.simps(1))
   
 
@@ -465,7 +469,7 @@ lemma reserve_change_add_right:
 
 lemma fee_growth_is_0_when_not_zeroForOne:
   \<open> 0 < l \<and> l \<le> u
-\<Longrightarrow> global_fee0_growth (fee_growth False fee_factor L l u) = 0\<close>
+\<Longrightarrow> global_fee0_growth (fee_growth' False fee_factor L l u) = 0\<close>
   subgoal premises prems
 proof -
   have \<open> 0 < l \<and> l \<le> u
@@ -480,7 +484,7 @@ qed .
 
 lemma fee_growth_is_0_when_zeroForOne:
   \<open> 0 < l \<and> l \<le> u
-\<Longrightarrow> global_fee1_growth (fee_growth True fee_factor L l u) = 0\<close>
+\<Longrightarrow> global_fee1_growth (fee_growth' True fee_factor L l u) = 0\<close>
   subgoal premises prems
 proof -
   have \<open> 0 < l \<and> l \<le> u
@@ -496,37 +500,36 @@ qed .
 
 lemma fee_growth_add_left:
   \<open> 0 < l \<and> l \<le> m \<and> m \<le> u
-\<Longrightarrow> fee_growth zeroForOne factor L l m + fee_growth zeroForOne factor L m u
-        = fee_growth zeroForOne factor L l u\<close>
-  unfolding fee_growth_def
+\<Longrightarrow> fee_growth' zeroForOne factor L l m + fee_growth' zeroForOne factor L m u
+        = fee_growth' zeroForOne factor L l u\<close>
+  unfolding fee_growth'_def
   by (smt (verit, ccfv_threshold) Is_partition_cat Partition_always_exists' fee_growth_Is_linear_sum partition_intergral_add partition_intergral_irrelavent_with_parition')
 
 lemma fee_growth_add_left_in_a_tick:
   \<open> 0 < l \<and> m \<le> u
 \<Longrightarrow> Const_Interval tick_of_price l m
-\<Longrightarrow> fee_growth_in_a_tick zeroForOne factor L (tick_of_price l) l m + fee_growth zeroForOne factor L m u
-        = fee_growth zeroForOne factor L l u\<close>
+\<Longrightarrow> fee_growth_in_a_tick zeroForOne factor L (tick_of_price l) l m + fee_growth' zeroForOne factor L m u
+        = fee_growth' zeroForOne factor L l u\<close>
   by (metis (mono_tags, opaque_lifting) Const_Interval_LE Is_partition.simps(1) fee_growth_add_left growth_irrelavent_with_partition partition_intergral.simps(1))
 
 lemma fee_growth_add_right:
   \<open> 0 < l \<and> l \<le> m \<and> m \<le> u
-\<Longrightarrow> fee_growth zeroForOne factor L l m + fee_growth zeroForOne factor L m u
-        = fee_growth zeroForOne factor L l u\<close>
-unfolding fee_growth_def
-  using fee_growth_add_left fee_growth_def by auto
+\<Longrightarrow> fee_growth' zeroForOne factor L l m + fee_growth' zeroForOne factor L m u
+        = fee_growth' zeroForOne factor L l u\<close>
+  using fee_growth_add_left fee_growth'_def by auto
 
 
 lemma fee_growth_add_right_in_a_tick:
   \<open> 0 < l \<and> l \<le> m
 \<Longrightarrow> Const_Interval tick_of_price m u
-\<Longrightarrow> fee_growth zeroForOne factor L l m + fee_growth_in_a_tick zeroForOne factor L (tick_of_price m) m u
-        = fee_growth zeroForOne factor L l u\<close>
+\<Longrightarrow> fee_growth' zeroForOne factor L l m + fee_growth_in_a_tick zeroForOne factor L (tick_of_price m) m u
+        = fee_growth' zeroForOne factor L l u\<close>
   by (metis (mono_tags, lifting) Const_Interval_LE Is_partition.simps(1) fee_growth_add_right growth_irrelavent_with_partition partition_intergral.simps(1))
 
 lemma gSum_fee_growth_eq_0:
   \<open> MIN_PRICE \<le> pr0 \<and> pr0 \<le> pr1 \<and> pr1 < MAX_PRICE
 \<Longrightarrow> (\<forall>k. pr0 \<le> k \<and> k < pr1 \<longrightarrow> L (tick_of_price k) = 0)
-\<Longrightarrow> gSum (fee_growth zeroForOne factor L pr0 pr1) = 0\<close>
+\<Longrightarrow> gSum (fee_growth' zeroForOne factor L pr0 pr1) = 0\<close>
   subgoal premises prems proof -
     have \<open>MIN_PRICE \<le> pr0 \<Longrightarrow> Is_partition tick_of_price pr0 pr1 ps
     \<Longrightarrow> (\<forall>k. pr0 \<le> k \<and> k < pr1 \<longrightarrow> L (tick_of_price k) = 0)
@@ -542,9 +545,9 @@ lemma gSum_fee_growth_eq_0:
 lemma gSum_fee_growth:
   \<open> MIN_PRICE \<le> pr0 \<and> pr0 \<le> pr1 \<and> pr1 < MAX_PRICE
 \<Longrightarrow> (\<forall>k. pr0 \<le> k \<and> k < pr1 \<longrightarrow> 0 < L (tick_of_price k))
-\<Longrightarrow> gSum (fee_growth zeroForOne factor L pr0 pr1) =
+\<Longrightarrow> gSum (fee_growth' zeroForOne factor L pr0 pr1) =
         (if zeroForOne then ( (1/pr0 - 1/pr1) * factor ,0) else (0, (pr1 - pr0) * factor))\<close>
-  unfolding fee_growth_def
+  unfolding fee_growth'_def
   subgoal premises prems proof -
     have \<open>MIN_PRICE \<le> pr0 \<Longrightarrow> Is_partition tick_of_price pr0 pr1 ps
     \<Longrightarrow> (\<forall>k. pr0 \<le> k \<and> k < pr1 \<longrightarrow> 0 < L (tick_of_price k))
@@ -557,13 +560,13 @@ lemma gSum_fee_growth:
       apply (smt (verit, best) Const_Interval_LE Is_partition_imp_LE add_Pair gSum_fee_growth_in_a_tick left_diff_distrib prems(1))
       by (smt (verit, del_insts) Const_Interval_LE Is_partition_imp_LE add_Pair gSum_fee_growth_in_a_tick left_diff_distrib prems(1))
     then show ?thesis
-      by (metis Partition_always_exists' fee_growth_def growth_irrelavent_with_partition less_max_iff_disj max.order_iff prems price_of_L0)
+      by (metis Partition_always_exists' fee_growth'_def growth_irrelavent_with_partition less_max_iff_disj max.order_iff prems price_of_L0)
   qed .
 
 lemma fee_growth_eq_0:
   \<open> MIN_PRICE \<le> pr0 \<and> pr0 \<le> pr1 \<and> pr1 < MAX_PRICE
 \<Longrightarrow> k < tick_of_price pr0 \<or> tick_of_price pr1 < k \<or> (pr1 = price_of k)
-\<Longrightarrow> fee_growth zeroForOne factor L pr0 pr1 k = 0\<close>
+\<Longrightarrow> fee_growth' zeroForOne factor L pr0 pr1 k = 0\<close>
   subgoal premises prems
 proof -
   have \<open>MIN_PRICE \<le> pr0 \<and> pr0 \<le> pr1 \<and> pr1 < MAX_PRICE
@@ -589,15 +592,15 @@ proof -
     apply (smt (verit) Const_Interval_LE Is_partition_imp_LE add_0 fun_updt_0_0 zero_prod_def)
     by (smt (z3) Const_Interval_LE Is_partition_imp_LE add.right_neutral fun_upd_other fun_upd_same mult_less_0_iff plus_fun_def price_of_L0 price_of_tick zero_fun zero_less_mult_iff zero_prod_def)
   then show ?thesis
-    unfolding fee_growth_def zero_prod_def
-    by (metis Partition_always_exists' dual_order.order_iff_strict dual_order.strict_trans fee_growth_def growth_irrelavent_with_partition prems(1) prems(2) price_of_L0)
+    unfolding fee_growth'_def zero_prod_def
+    by (metis Partition_always_exists' dual_order.order_iff_strict dual_order.strict_trans fee_growth'_def growth_irrelavent_with_partition prems(1) prems(2) price_of_L0)
 qed .
 
 lemma fee_growth_always_ge_0:
   \<open> 0 < l \<and> l \<le> u
 \<Longrightarrow> 0 \<le> factor
-\<Longrightarrow> 0 \<le> fee_growth zeroForOne factor L l u k\<close>
-  unfolding fee_growth_def
+\<Longrightarrow> 0 \<le> fee_growth' zeroForOne factor L l u k\<close>
+  unfolding fee_growth'_def
   subgoal premises prems
   proof -
     have \<open>0 < l \<and> l \<le> u
@@ -623,7 +626,7 @@ lemma fee_growth_always_ge_0:
       apply (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
       by (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
     then show ?thesis
-      using Partition_always_exists' fee_growth_def growth_irrelavent_with_partition prems(1) by fastforce
+      using Partition_always_exists' fee_growth'_def growth_irrelavent_with_partition prems(1) by fastforce
   qed .
 
 
@@ -996,8 +999,8 @@ proc computeSwapStep:
 
   if \<open>$exactIn \<and> $next_price \<noteq> $price_target\<close> \<medium_left_bracket>
     \<open>$amount_remain - $amountIn\<close> \<rightarrow> feeAmount is \<open>amountIn * feePips / (1 - feePips)\<close>
-    affirm using \<phi> by (auto simp add: amountIn_def next_price_def \<Delta>amount_def amount_remain'_def max_amount_def min_def;
-                       simp add: right_diff_distrib' right_diff_distrib)
+  affirm using \<phi> by (auto simp add: amountIn_def next_price_def \<Delta>amount_def amount_remain'_def max_amount_def min_def;
+                     simp add: right_diff_distrib' right_diff_distrib)
   \<medium_right_bracket>. \<medium_left_bracket> \<open>$amountIn * $feePips / (1 - $feePips)\<close> \<rightarrow> feeAmount \<medium_right_bracket>. ;;
 
   return ($next_price, $amountIn, $amountOut, $feeAmount)
