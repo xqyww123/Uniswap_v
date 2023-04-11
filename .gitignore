@@ -1,0 +1,12 @@
+# VIM
+*.ll
+*~
+*.swp
+*.swo
+.*.marks
+
+\#*
+output
+paper/nu-TL-paper/
+Phi_System/Overleaf-CoP-paper
+

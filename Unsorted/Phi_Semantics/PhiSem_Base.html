@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><link rel="stylesheet" type="text/css" href="isabelle.css"/>
+<title>Theory PhiSem_Base</title>
+</head>
+
+
+<body>
+<div class="head">
+<h1>Theory PhiSem_Base</h1>
+</div>
+
+<pre class="source"><span class="keyword1"><span class="command"><span>theory</span></span></span><span> </span><a href="PhiSem_Base.html"><span>PhiSem_Base</span></a><span>
+  </span><span class="keyword2"><span class="keyword"><span>imports</span></span></span><span> </span><a href="../Phi_System/PhiSem_Formalization_Tools.html"><span>Phi_System.PhiSem_Formalization_Tools</span></a><span>
+</span><span class="keyword2"><span class="keyword"><span>begin</span></span></span><span>
+
+
+</span><span class="keyword1"><span class="command"><span>type_synonym</span></span></span><span> </span><span class="entity_def" id="PhiSem_Base.symbol|type"><span>symbol</span></span><span> </span><span class="main"><span>=</span></span><span> </span><span class="quoted"><a class="entity_ref" href="../../HOL/HOL/String.html#String.string|type"><span>string</span></a></span><span> </span><span class="comment1"><span>― ‹</span><span>Right now we are using string directly which is very inefficient.
+</span><span>  In future, we will instead use a global stateful symbol table that assigns each string dynamically
+</span><span>  to a numeric index that is unique throughout the ML execution session.
+</span><span>  The approach ensures semantic equity and, only takes logarithm space to the total number of symbols.</span><span>
+›</span></span><span>
+</span><span class="keyword1"><span class="command"><span>type_synonym</span></span></span><span> </span><span class="entity_def" id="PhiSem_Base.field_name|type"><span>field_name</span></span><span> </span><span class="main"><span>=</span></span><span> </span><span class="quoted"><a class="entity_ref" href="PhiSem_Base.html#PhiSem_Base.symbol|type"><span>symbol</span></a></span><span>
+
+</span><span class="keyword2"><span class="keyword"><span>end</span></span></span></pre>
+</body>
+
+</html>
