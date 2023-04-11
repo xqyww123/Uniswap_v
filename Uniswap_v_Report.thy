@@ -53,7 +53,7 @@ the price, the reserve change between the two prices is the integral over the pr
 by splitting the price interval into several partitions in every of which the liquidity is constant,
 the sum of the evaluation of the every partition.
 
-We formalize this by \<^const>\<open>Const_Interval\<close>, \<^const>\<open>Is_partition\<close>, and \<^const>\<open>partition_intergral\<close>.
+We formalize this by \<^const>\<open>Const_Interval\<close>, \<^const>\<open>Is_partition\<close>, and \<^const>\<open>partition_integral\<close>.
 \<close>
 
 lemma Const_Interval__definition:
@@ -76,10 +76,10 @@ Then, we can add up the evaluation of every partition to get the integral, by a 
 \<close>
 
 lemma partition_intergral__definition:
-  \<open>partition_intergral reserve_change_in_a_step L\<^sub>p low up []
+  \<open>partition_integral reserve_change_in_a_step L\<^sub>p low up []
       = reserve_change_in_a_step (L\<^sub>p low) low up\<close>
-  \<open>partition_intergral reserve_change_in_a_step L\<^sub>p low up ([h] + r)
-      = reserve_change_in_a_step (L\<^sub>p low) low h + partition_intergral reserve_change_in_a_step L\<^sub>p h up r\<close>
+  \<open>partition_integral reserve_change_in_a_step L\<^sub>p low up ([h] + r)
+      = reserve_change_in_a_step (L\<^sub>p low) low h + partition_integral reserve_change_in_a_step L\<^sub>p h up r\<close>
   by simp+
 
 
@@ -88,7 +88,7 @@ text \<open>Finally, we can specify the relationship between reserves, price, an
 
 lemma
 \<open>reserve_change' L lower upper
-    = partition_intergral reserve_change_in_a_step (L \<circ> tick_of_price) lower upper
+    = partition_integral reserve_change_in_a_step (L \<circ> tick_of_price) lower upper
                           (SOME ps. Is_partition (L \<circ> tick_of_price) lower upper ps)\<close>
   by (metis Eps_cong Is_key_partition_implies_Is_partition reserve_change'_def reserve_change_irrelavent_with_partition someI_ex)
 
@@ -165,6 +165,10 @@ and the addition is defined pointwisely.
 the contract owner's commission accordingly.
 
 To conclude, we have verified the proper behavior of the swap operation under valid input arguments.
+The implementation is highly optimized, and our proof recoveries from it the abstract liquidity distribution
+and the fee-growth distribution as a close formalization of the white paper specification, showing
+the implementation refines properly the white paper specification.
+
 We haven't considered arithmetic overflow and precision error of fix-point arithmetic.
 The verification is done on an abstract specification level where we use variables instead of
 the exact solidity semantics to formalize the program.

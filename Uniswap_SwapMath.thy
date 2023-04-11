@@ -248,9 +248,9 @@ lemma
 
 
 
-primrec partition_intergral :: \<open>('b \<Rightarrow> real \<Rightarrow> real \<Rightarrow> 'a::monoid_add) \<Rightarrow> (real \<Rightarrow> 'b) \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real list \<Rightarrow> 'a\<close>
-  where \<open>partition_intergral S L low up [] = S (L low) low up\<close> |
-        \<open>partition_intergral S L low up (h#l) = S (L low) low h + partition_intergral S L h up l\<close>
+primrec partition_integral :: \<open>('b \<Rightarrow> real \<Rightarrow> real \<Rightarrow> 'a::monoid_add) \<Rightarrow> (real \<Rightarrow> 'b) \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real list \<Rightarrow> 'a\<close>
+  where \<open>partition_integral S L low up [] = S (L low) low up\<close> |
+        \<open>partition_integral S L low up (h#l) = S (L low) low h + partition_integral S L h up l\<close>
 
 definition Is_linear_sum
   where \<open>Is_linear_sum S \<longleftrightarrow> (\<forall>C l m u. l \<le> m \<and> m \<le> u \<longrightarrow> S C l m + S C m u = S C l u)
@@ -259,7 +259,7 @@ definition Is_linear_sum
 lemma partition_intergral_add:
   \<open> Is_partition L l m A
 \<Longrightarrow> Is_partition L m u B
-\<Longrightarrow> partition_intergral S L l m A + partition_intergral S L m u B = partition_intergral S L l u (A@[m]@B)\<close>
+\<Longrightarrow> partition_integral S L l m A + partition_integral S L m u B = partition_integral S L l u (A@[m]@B)\<close>
   apply (induct A arbitrary: l; simp)
   by (simp add: add.assoc)
   
@@ -268,7 +268,7 @@ lemma partition_intergral_const:
   \<open> Is_linear_sum S
 \<Longrightarrow> Const_Interval L l u
 \<Longrightarrow> Is_partition L l u A
-\<Longrightarrow> partition_intergral S L l u A = S (L l) l u\<close>
+\<Longrightarrow> partition_integral S L l u A = S (L l) l u\<close>
   unfolding Is_linear_sum_def
   apply (induct A arbitrary: l; simp)
   by (smt (verit) Const_Interval_def Is_partition_imp_LE)
@@ -340,14 +340,14 @@ lemmas Partition_always_exists' = Partition_always_exists[where L=id, simplified
 lemma partition_intergral_irrelavent_with_parition:
   \<open> Is_linear_sum S
 \<Longrightarrow> Is_partition L l u A
-\<Longrightarrow>  partition_intergral S L l u A = partition_intergral S L l u (Eps (Is_key_partition L l u))\<close>
+\<Longrightarrow>  partition_integral S L l u A = partition_integral S L l u (Eps (Is_key_partition L l u))\<close>
   unfolding Is_linear_sum_def
   apply (induct A arbitrary: l; simp)
-  apply (metis Is_key_partition.simps(1) Key_partition_uniq partition_intergral.simps(1) someI_ex)
+  apply (metis Is_key_partition.simps(1) Key_partition_uniq partition_integral.simps(1) someI_ex)
     
     subgoal for a A l
       apply (cases \<open>Const_Interval L l u\<close>)
-       apply (smt (verit, best) Const_Interval_LE Const_Interval_eq_lower Const_Interval_triangle Is_key_partition.simps(1) Is_partition_imp_LE Key_partition_uniq partition_intergral.simps(1) someI_ex)
+       apply (smt (verit, best) Const_Interval_LE Const_Interval_eq_lower Const_Interval_triangle Is_key_partition.simps(1) Is_partition_imp_LE Key_partition_uniq partition_integral.simps(1) someI_ex)
       apply clarify
       subgoal premises prems proof -
         have t1: \<open>Is_partition L l u (a # A)\<close>
@@ -362,11 +362,11 @@ lemma partition_intergral_irrelavent_with_parition:
           using Is_key_partition_implies_Is_partition KeyPoint_in_partition kl prems(2) t2 by blast
         obtain ps1 ps2 where ps12: \<open>Eps (Is_key_partition L l u) = ps1 @ [kl] @ ps2 \<and> Is_key_partition L l kl ps1 \<and> Is_key_partition L kl u ps2\<close>
           using Key_partition_split t2 t3 by blast
-        have ps12_integral: \<open>partition_intergral S L l u (Eps (Is_key_partition L l u))
-                = partition_intergral S L l kl ps1 + partition_intergral S L kl u ps2\<close>
-          by (metis (no_types) Is_key_partition.simps(1) Key_partition_uniq append_Cons append_Nil partition_intergral.simps(1) partition_intergral.simps(2) ps12 t_l_kl)
-        have ps1_integral: \<open>partition_intergral S L l kl ps1 = S (L l) l kl\<close>
-          using Is_key_partition.simps(1) Key_partition_uniq partition_intergral.simps(1) ps12 t_l_kl by blast
+        have ps12_integral: \<open>partition_integral S L l u (Eps (Is_key_partition L l u))
+                = partition_integral S L l kl ps1 + partition_integral S L kl u ps2\<close>
+          by (metis (no_types) Is_key_partition.simps(1) Key_partition_uniq append_Cons append_Nil partition_integral.simps(1) partition_integral.simps(2) ps12 t_l_kl)
+        have ps1_integral: \<open>partition_integral S L l kl ps1 = S (L l) l kl\<close>
+          using Is_key_partition.simps(1) Key_partition_uniq partition_integral.simps(1) ps12 t_l_kl by blast
 
         have \<open>KeyPoint L a kl \<or> a = kl\<close>
           by (metis Const_Interval_key_point KeyPoint_def KeyPoint_uniq kl prems(5))
@@ -379,7 +379,7 @@ lemma partition_intergral_irrelavent_with_parition:
         next
           case b
           then show ?thesis
-            by (smt (verit) Const_Interval_LE Const_Interval_eq_lower Eps_cong Is_key_partition.simps(2) Is_partition_imp_LE KeyPoint_def Key_partition_uniq add.assoc partition_intergral.simps(2) prems(2) prems(3) prems(5) ps12 t1 t2 t_l_kl xx1)
+            by (smt (verit) Const_Interval_LE Const_Interval_eq_lower Eps_cong Is_key_partition.simps(2) Is_partition_imp_LE KeyPoint_def Key_partition_uniq add.assoc partition_integral.simps(2) prems(2) prems(3) prems(5) ps12 t1 t2 t_l_kl xx1)
         qed
       qed . .
 
@@ -391,7 +391,7 @@ lemma reserve_change_Is_linear_sum:
 
 definition reserve_change'
   where \<open>reserve_change' L lower upper
-    = partition_intergral reserve_change_in_a_step (L o tick_of_price) lower upper (Eps (Is_key_partition (L o tick_of_price) lower upper))\<close>
+    = partition_integral reserve_change_in_a_step (L o tick_of_price) lower upper (Eps (Is_key_partition (L o tick_of_price) lower upper))\<close>
 
 abbreviation
   \<open>reserve_change zeroForOne L pr0 pr1 \<equiv>
@@ -399,13 +399,13 @@ abbreviation
 
 lemma reserve_change_irrelavent_with_partition:
   \<open> Is_partition (L o tick_of_price) l u ps
-\<Longrightarrow> partition_intergral reserve_change_in_a_step (L o tick_of_price) l u ps = reserve_change' L l u\<close>
+\<Longrightarrow> partition_integral reserve_change_in_a_step (L o tick_of_price) l u ps = reserve_change' L l u\<close>
   unfolding reserve_change'_def
   using partition_intergral_irrelavent_with_parition reserve_change_Is_linear_sum by blast
 
 definition fee_growth'
   where \<open>fee_growth' zeroForOne factor L l u
-    = partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u (Eps (Is_key_partition (tick_of_price) l u))\<close>
+    = partition_integral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u (Eps (Is_key_partition (tick_of_price) l u))\<close>
 
 abbreviation fee_growth
   where \<open>fee_growth zeroForOne factor L pr0 pr1 \<equiv>
@@ -418,7 +418,7 @@ lemma fee_growth_Is_linear_sum:
   
 lemma growth_irrelavent_with_partition:
   \<open> Is_partition tick_of_price l u ps
-\<Longrightarrow> partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u ps = fee_growth' zeroForOne factor L l u\<close>
+\<Longrightarrow> partition_integral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u ps = fee_growth' zeroForOne factor L l u\<close>
   unfolding fee_growth'_def
   using fee_growth_Is_linear_sum partition_intergral_irrelavent_with_parition by blast
 
@@ -435,11 +435,11 @@ lemma Is_partition_x_x:
 
 lemma reserve_change_0[simp]:
   \<open>reserve_change' L x x = 0\<close>
-  by (metis (no_types, lifting) Const_Interval_x_x Is_key_partition.simps(1) Key_partition_uniq partition_intergral.simps(1) reserve_change'_def reserve_change_in_a_tick_0 someI_ex)
+  by (metis (no_types, lifting) Const_Interval_x_x Is_key_partition.simps(1) Key_partition_uniq partition_integral.simps(1) reserve_change'_def reserve_change_in_a_tick_0 someI_ex)
 
 lemma fee_growth_0[simp]:
   \<open>fee_growth' zeroForOne factor L x x = 0\<close>
-  by (metis Const_Interval_x_x' Is_key_partition.simps(1) Is_key_partition_implies_Is_partition fee_growth_in_a_tick_0 growth_irrelavent_with_partition partition_intergral.simps(1))
+  by (metis Const_Interval_x_x' Is_key_partition.simps(1) Is_key_partition_implies_Is_partition fee_growth_in_a_tick_0 growth_irrelavent_with_partition partition_integral.simps(1))
   
 
 lemma reserve_change_add_left:
@@ -450,7 +450,7 @@ lemma reserve_change_add_left:
     have t1: \<open>Ex (Is_partition (L o tick_of_price) m u)\<close>
       by (meson Const_Interval_def Partition_always_exists dual_order.strict_trans1 prems(1) prems(2))
     show ?thesis
-      by (smt (verit, ccfv_threshold) Is_partition.simps(2) add.commute comp_apply partition_intergral.simps(2) prems(2) reserve_change_irrelavent_with_partition t1)
+      by (smt (verit, ccfv_threshold) Is_partition.simps(2) add.commute comp_apply partition_integral.simps(2) prems(2) reserve_change_irrelavent_with_partition t1)
   qed .
 
 lemma reserve_change_add_right:
@@ -478,7 +478,7 @@ lemma reserve_change'_LE_0:
 proof -
   have \<open>0 < l \<and> l \<le> u \<Longrightarrow> (\<forall>k. 0 \<le> L k) \<Longrightarrow>
     Is_partition (L \<circ> tick_of_price) l u ps \<Longrightarrow>
-    0 \<le> partition_intergral reserve_change_in_a_step (L \<circ> tick_of_price) l u ps\<close> for ps
+    0 \<le> partition_integral reserve_change_in_a_step (L \<circ> tick_of_price) l u ps\<close> for ps
     apply (induct ps arbitrary: l; simp add: reserve_change_in_a_step_def zero_prod_def less_eq_prod_def)
     using frac_le apply blast
     by (simp add: Const_Interval_def Is_partition_le_last frac_le)
@@ -500,7 +500,7 @@ lemma fee_growth_is_0_when_not_zeroForOne:
 proof -
   have \<open> 0 < l \<and> l \<le> u
      \<Longrightarrow> Is_partition tick_of_price l u ps
-     \<Longrightarrow> global_fee0_growth (partition_intergral (fee_growth_in_a_tick False fee_factor L) tick_of_price l u ps) = 0\<close>
+     \<Longrightarrow> global_fee0_growth (partition_integral (fee_growth_in_a_tick False fee_factor L) tick_of_price l u ps) = 0\<close>
     for ps
     apply (induct ps arbitrary: l; simp add: fee_growth_in_a_tick_def zero_fun_def)
     by (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
@@ -515,7 +515,7 @@ lemma fee_growth_is_0_when_zeroForOne:
 proof -
   have \<open> 0 < l \<and> l \<le> u
      \<Longrightarrow> Is_partition tick_of_price l u ps
-     \<Longrightarrow> global_fee1_growth (partition_intergral (fee_growth_in_a_tick True fee_factor L) tick_of_price l u ps) = 0\<close>
+     \<Longrightarrow> global_fee1_growth (partition_integral (fee_growth_in_a_tick True fee_factor L) tick_of_price l u ps) = 0\<close>
     for ps
     apply (induct ps arbitrary: l; simp add: fee_growth_in_a_tick_def zero_fun_def)
     by (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
@@ -536,7 +536,7 @@ lemma fee_growth_add_left_in_a_tick:
 \<Longrightarrow> Const_Interval tick_of_price l m
 \<Longrightarrow> fee_growth_in_a_tick zeroForOne factor L (tick_of_price l) l m + fee_growth' zeroForOne factor L m u
         = fee_growth' zeroForOne factor L l u\<close>
-  by (metis (mono_tags, opaque_lifting) Const_Interval_LE Is_partition.simps(1) fee_growth_add_left growth_irrelavent_with_partition partition_intergral.simps(1))
+  by (metis (mono_tags, opaque_lifting) Const_Interval_LE Is_partition.simps(1) fee_growth_add_left growth_irrelavent_with_partition partition_integral.simps(1))
 
 lemma fee_growth_add_right:
   \<open> 0 < l \<and> l \<le> m \<and> m \<le> u
@@ -550,7 +550,7 @@ lemma fee_growth_add_right_in_a_tick:
 \<Longrightarrow> Const_Interval tick_of_price m u
 \<Longrightarrow> fee_growth' zeroForOne factor L l m + fee_growth_in_a_tick zeroForOne factor L (tick_of_price m) m u
         = fee_growth' zeroForOne factor L l u\<close>
-  by (metis (mono_tags, lifting) Const_Interval_LE Is_partition.simps(1) fee_growth_add_right growth_irrelavent_with_partition partition_intergral.simps(1))
+  by (metis (mono_tags, lifting) Const_Interval_LE Is_partition.simps(1) fee_growth_add_right growth_irrelavent_with_partition partition_integral.simps(1))
 
 lemma gSum_fee_growth_eq_0:
   \<open> MIN_PRICE \<le> pr0 \<and> pr0 \<le> pr1 \<and> pr1 < MAX_PRICE
@@ -559,7 +559,7 @@ lemma gSum_fee_growth_eq_0:
   subgoal premises prems proof -
     have \<open>MIN_PRICE \<le> pr0 \<Longrightarrow> Is_partition tick_of_price pr0 pr1 ps
     \<Longrightarrow> (\<forall>k. pr0 \<le> k \<and> k < pr1 \<longrightarrow> L (tick_of_price k) = 0)
-    \<Longrightarrow> gSum (partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price pr0 pr1 ps) = (0,0)\<close> for ps
+    \<Longrightarrow> gSum (partition_integral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price pr0 pr1 ps) = (0,0)\<close> for ps
     apply (induct ps arbitrary: pr0; simp add: zero_prod_def)
        apply (metis Const_Interval_LE fee_growth_in_a_tick_0 gSum_fee_growth_in_a_tick less_eq_real_def prems(1) zero_fun)
       using plus_prod_def
@@ -577,7 +577,7 @@ lemma gSum_fee_growth:
   subgoal premises prems proof -
     have \<open>MIN_PRICE \<le> pr0 \<Longrightarrow> Is_partition tick_of_price pr0 pr1 ps
     \<Longrightarrow> (\<forall>k. pr0 \<le> k \<and> k < pr1 \<longrightarrow> 0 < L (tick_of_price k))
-    \<Longrightarrow> gSum (partition_intergral (fee_growth_in_a_tick zeroForOne factor L)  tick_of_price pr0 pr1 ps)
+    \<Longrightarrow> gSum (partition_integral (fee_growth_in_a_tick zeroForOne factor L)  tick_of_price pr0 pr1 ps)
           = (if zeroForOne then ( (1/pr0 - 1/pr1) * factor ,0) else (0, (pr1 - pr0) * factor))\<close> for ps
       apply (induct ps arbitrary: pr0; simp)
        apply (simp add: Const_Interval_LE prems)
@@ -598,7 +598,7 @@ proof -
   have \<open>MIN_PRICE \<le> pr0 \<and> pr0 \<le> pr1 \<and> pr1 < MAX_PRICE
 \<Longrightarrow> k < tick_of_price pr0 \<or> tick_of_price pr1 < k \<or> (pr1 = price_of k)
 \<Longrightarrow> Is_partition tick_of_price pr0 pr1 ps
-\<Longrightarrow> partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price pr0 pr1 ps k = (0,0)\<close>
+\<Longrightarrow> partition_integral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price pr0 pr1 ps k = (0,0)\<close>
     for ps
     apply (induct ps arbitrary: pr0; auto simp add: fee_growth_in_a_tick_def zero_prod_def)
     apply (meson dual_order.strict_trans1 less_le_not_le price_of_L0 tick_of_price_LE_mono)
@@ -631,7 +631,7 @@ lemma fee_growth_always_ge_0:
   proof -
     have \<open>0 < l \<and> l \<le> u
     \<Longrightarrow> Is_partition tick_of_price l u ps
-    \<Longrightarrow> 0 \<le> partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u ps k\<close> for ps
+    \<Longrightarrow> 0 \<le> partition_integral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u ps k\<close> for ps
       apply (induct ps arbitrary: l, auto simp add: fee_growth_in_a_tick_def zero_prod_def plus_fun less_eq_prod_def)
       apply (simp add: frac_le prems(2))
       using prems(2) apply force
