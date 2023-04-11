@@ -107,19 +107,19 @@ lemma (in Pool)
   \<p>\<r>\<e>\<m>\<i>\<s>\<e> (if zeroForOne then price_limit < price \<and> MIN_PRICE < price_limit else price < price_limit \<and> price_limit < MAX_PRICE) \<Longrightarrow>
 
   \<p>\<r>\<o>\<c> swap (\<a>\<r>\<g>3 \<^bold>, \<a>\<r>\<g>2 \<^bold>, \<a>\<r>\<g>1)
-  \<lbrace> (price, i, unlocked, Lg, L, growth, \<delta>, fee_protocol, protocal_fees) \<Ztypecolon> Uniswap_Pool\<heavy_comma>
+  \<lbrace> (price, i, unlocked, Lg, L, growth, \<delta>, fee_protocol, protocol_fees) \<Ztypecolon> Uniswap_Pool\<heavy_comma>
      zeroForOne \<Ztypecolon> \<v>\<a>\<l>[\<a>\<r>\<g>1] \<bool>\<heavy_comma> amount_specified \<Ztypecolon> \<v>\<a>\<l>[\<a>\<r>\<g>2] \<real>\<heavy_comma> price_limit \<Ztypecolon> \<v>\<a>\<l>[\<a>\<r>\<g>3] \<real>
   \<longmapsto>
-   (price', i', unlocked, Lg, L, growth + fee_growth zeroForOne fee_factor L price price', \<delta>, fee_protocol,
-       protocal_fees + \<Delta>protocal_fees fee_protocol zeroForOne L price price' fee_factor) \<Ztypecolon> Uniswap_Pool\<heavy_comma>
+   (price', i', unlocked, Lg, L, growth + fee_growth zeroForOne fee_rate' L price price', \<delta>, fee_protocol,
+       protocol_fees + \<Delta>protocal_fees fee_protocol zeroForOne L price price' fee_rate') \<Ztypecolon> Uniswap_Pool\<heavy_comma>
      transfer_out \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> transfer_in \<Ztypecolon> \<v>\<a>\<l> \<real>
    \<s>\<u>\<b>\<j> price' i' transfer_out transfer_in.
      (if zeroForOne then price_limit \<le> price' else price' \<le> price_limit) \<and>
      (price' = price_limit \<or>
-      (if 0 < amount_specified then amount_specified * (1 - fee) = (if zeroForOne then fst else snd) (reserve_change zeroForOne L price price')
+      (if 0 < amount_specified then amount_specified * (1 - fee_rate) = (if zeroForOne then fst else snd) (reserve_change zeroForOne L price price')
        else - amount_specified = (if zeroForOne then snd else fst) (reserve_change zeroForOne L price price'))) \<and>
      transfer_out = (if zeroForOne then snd else fst) (reserve_change zeroForOne L price price') \<and>
-     transfer_in = (if zeroForOne then fst else snd) (reserve_change zeroForOne L price price') / (1 - fee)
+     transfer_in = (if zeroForOne then fst else snd) (reserve_change zeroForOne L price price') / (1 - fee_rate)
   \<rbrace>\<close>
   using swap_\<phi>app .
 
@@ -130,7 +130,8 @@ text \<open>Right now we have only verified the operation works correctly when t
 
 The proof is given by theorem @{thm Uniswap_Pool.Pool.swap_\<phi>app}.
 
-Argument \<^term>\<open>zeroForOne\<close> indicates if the user wants to buy token1 using token0 or reversely.
+Argument \<^term>\<open>zeroForOne\<close> indicates if the user wants to buy token1 using token0 or reversely to buy
+token1 using token0.
 \<^term>\<open>amount_specified\<close> is the amount that the user wants to pay if it is positive,
 or the amount that user wants to pay for if it is negative.
 As the transaction affects the price, the transaction terminates once the price reaches the \<^term>\<open>price_limit\<close>
@@ -141,14 +142,14 @@ The initial state of the Uniswap pool contract is on price \<^term>\<open>price\
 gained on the tick, in earning per unit of liquidity and for token0 and token1 respectively.
 Liquidity providers' yields are calculated by multiplying it by the amount of their liquidity.
 \<^term>\<open>fee_protocol\<close> is the proportion of the contract owner's commission from the transaction fee.
-\<^term>\<open>protocal_fees\<close> is the amount of the contract owner's commission that has been gained.
+\<^term>\<open>protocol_fees\<close> is the amount of the contract owner's commission that has been gained.
 
 \<^term>\<open>Lg\<close> is a technical scaffold used in the implementation. So-called \<^emph>\<open>Gross Liquidity\<close>, it is
 a function from ticks to the total amount of liquidity providers' intervals that reference the tick.
 
 The above lemma specifies, after execution of the swap operation, the resulted price \<^term>\<open>price'\<close>
 will either reaches the \<^term>\<open>price_limit\<close> (but never exceeds it), or, is exactly the one causing
-that the reserve change equals to the specified amount, with transaction fee considered.
+that the reserve change equals the specified amount, with transaction fee considered.
 \<open>reserve_change zeroForOne L price next_price \<equiv> (if zeroForOne then reserve_change' L next_price price else reserve_change' L price next_price)\<close>
 \<^term>\<open>reserve_change\<close> is precisely the \<^term>\<open>reserve_change'\<close> defined above but just considers the
 order of the prices (buying token1 using token0 causes the price decreases and reversely for the other side).
@@ -156,7 +157,7 @@ order of the prices (buying token1 using token0 causes the price decreases and r
 The amount \<^term>\<open>transfer_in\<close> that the user needs to pay and \<^term>\<open>transfer_out\<close> that Uniswap transfers to the user
 are the change of the reserves, with consideration of transaction fee.
 
-\<^const>\<open>fee\<close> is the rate of the transaction fee.
+\<^const>\<open>fee_rate\<close> is the rate of the transaction fee.
 The record of the transaction fees is increased by \<open>fee_growth zeroForOne fee_factor L price price'\<close>
 which gives for each tick the the fee per liquidity of the transaction moving the price from \<^term>\<open>price\<close> to \<^term>\<open>price'\<close>.
 Note both \<^term>\<open>growth\<close> and \<^term>\<open>fee_growth zeroForOne fee_factor L price price'\<close> are functions of ticks,

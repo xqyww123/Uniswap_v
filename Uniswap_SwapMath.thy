@@ -25,14 +25,14 @@ lemma reserve_change_in_a_tick_sum_rev:
 
 
 
-consts fee :: real \<comment> \<open>We model the fee by a constant now\<close>
-specification (fee)
-  fee_range[simp]: \<open>0 < fee \<and> fee < 1\<close>
+consts fee_rate :: real \<comment> \<open>We model the fee rate by a constant now\<close>
+specification (fee_rate)
+  fee_rate_range[simp]: \<open>0 < fee_rate \<and> fee_rate < 1\<close>
   by (simp add: dense)
 
-definition \<open>fee_factor = fee / (1 - fee)\<close>
+definition \<open>fee_rate' = fee_rate / (1 - fee_rate)\<close>
 
-lemma fee_factor_GT_0: \<open>0 < fee_factor\<close> unfolding fee_factor_def by auto
+lemma fee_rate'_GT_0: \<open>0 < fee_rate'\<close> unfolding fee_rate'_def by auto
 
 definition fee_growth_in_a_tick :: \<open>bool \<Rightarrow> real \<Rightarrow> liquiditys \<Rightarrow> int \<Rightarrow> real \<Rightarrow> real \<Rightarrow> (int \<Rightarrow> real \<times> real)\<close>
   where \<open>fee_growth_in_a_tick zeroForOne factor L i price0 price1 =
@@ -495,12 +495,12 @@ lemma reserve_change'_LE_0':
 
 lemma fee_growth_is_0_when_not_zeroForOne:
   \<open> 0 < l \<and> l \<le> u
-\<Longrightarrow> global_fee0_growth (fee_growth' False fee_factor L l u) = 0\<close>
+\<Longrightarrow> global_fee0_growth (fee_growth' False fee_rate' L l u) = 0\<close>
   subgoal premises prems
 proof -
   have \<open> 0 < l \<and> l \<le> u
      \<Longrightarrow> Is_partition tick_of_price l u ps
-     \<Longrightarrow> global_fee0_growth (partition_integral (fee_growth_in_a_tick False fee_factor L) tick_of_price l u ps) = 0\<close>
+     \<Longrightarrow> global_fee0_growth (partition_integral (fee_growth_in_a_tick False fee_rate' L) tick_of_price l u ps) = 0\<close>
     for ps
     apply (induct ps arbitrary: l; simp add: fee_growth_in_a_tick_def zero_fun_def)
     by (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
@@ -510,12 +510,12 @@ qed .
 
 lemma fee_growth_is_0_when_zeroForOne:
   \<open> 0 < l \<and> l \<le> u
-\<Longrightarrow> global_fee1_growth (fee_growth' True fee_factor L l u) = 0\<close>
+\<Longrightarrow> global_fee1_growth (fee_growth' True fee_rate' L l u) = 0\<close>
   subgoal premises prems
 proof -
   have \<open> 0 < l \<and> l \<le> u
      \<Longrightarrow> Is_partition tick_of_price l u ps
-     \<Longrightarrow> global_fee1_growth (partition_integral (fee_growth_in_a_tick True fee_factor L) tick_of_price l u ps) = 0\<close>
+     \<Longrightarrow> global_fee1_growth (partition_integral (fee_growth_in_a_tick True fee_rate' L) tick_of_price l u ps) = 0\<close>
     for ps
     apply (induct ps arbitrary: l; simp add: fee_growth_in_a_tick_def zero_fun_def)
     by (meson Const_Interval_LE Is_partition_imp_LE dual_order.strict_trans1)
