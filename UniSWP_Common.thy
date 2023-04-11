@@ -8,6 +8,7 @@ begin
 
 type_synonym token = int
 type_synonym fee = real
+type_synonym price = real
 type_synonym address = int
 type_synonym tick = int
 type_synonym growth = \<open>fee \<comment> \<open>fee0\<close> \<times> fee \<comment> \<open>fee1\<close>\<close> (* \<times> int \<times> real \<times> int, we don't consider observation feature now *)

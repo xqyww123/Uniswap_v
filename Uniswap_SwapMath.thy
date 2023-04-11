@@ -275,7 +275,6 @@ lemma partition_intergral_const:
 
 
 
-
 (*
 lemma Is_partition_expand:
   \<open>Is_partition L l u (a # list) \<longleftrightarrow> 
@@ -390,15 +389,18 @@ lemma reserve_change_Is_linear_sum:
   unfolding Is_linear_sum_def
   using reserve_change_in_a_tick_0 reserve_change_in_a_tick_sum by presburger
 
-
-definition reserve_change
-  where \<open>reserve_change L lower upper
+definition reserve_change'
+  where \<open>reserve_change' L lower upper
     = partition_intergral reserve_change_in_a_step (L o tick_of_price) lower upper (Eps (Is_key_partition (L o tick_of_price) lower upper))\<close>
+
+abbreviation
+  \<open>reserve_change zeroForOne L pr0 pr1 \<equiv>
+    (if zeroForOne then reserve_change' L pr1 pr0 else reserve_change' L pr0 pr1)\<close>
 
 lemma reserve_change_irrelavent_with_partition:
   \<open> Is_partition (L o tick_of_price) l u ps
-\<Longrightarrow> partition_intergral reserve_change_in_a_step (L o tick_of_price) l u ps = reserve_change L l u\<close>
-  unfolding reserve_change_def
+\<Longrightarrow> partition_intergral reserve_change_in_a_step (L o tick_of_price) l u ps = reserve_change' L l u\<close>
+  unfolding reserve_change'_def
   using partition_intergral_irrelavent_with_parition' reserve_change_Is_linear_sum by blast
 
 definition fee_growth'
@@ -432,8 +434,8 @@ lemma Is_partition_x_x:
   using Const_Interval_x_x by blast
 
 lemma reserve_change_0[simp]:
-  \<open>reserve_change L x x = 0\<close>
-  by (metis (no_types, lifting) Const_Interval_x_x Is_key_partition.simps(1) Key_partition_uniq partition_intergral.simps(1) reserve_change_def reserve_change_in_a_tick_0 someI_ex)
+  \<open>reserve_change' L x x = 0\<close>
+  by (metis (no_types, lifting) Const_Interval_x_x Is_key_partition.simps(1) Key_partition_uniq partition_intergral.simps(1) reserve_change'_def reserve_change_in_a_tick_0 someI_ex)
 
 lemma fee_growth_0[simp]:
   \<open>fee_growth' zeroForOne factor L x x = 0\<close>
@@ -443,7 +445,7 @@ lemma fee_growth_0[simp]:
 lemma reserve_change_add_left:
   \<open> 0 < l \<and> m \<le> u
 \<Longrightarrow> Const_Interval (L o tick_of_price) l m
-\<Longrightarrow> reserve_change L m u + reserve_change_in_a_step (L (tick_of_price l)) l m = reserve_change L l u\<close>
+\<Longrightarrow> reserve_change' L m u + reserve_change_in_a_step (L (tick_of_price l)) l m = reserve_change' L l u\<close>
   subgoal premises prems proof -
     have t1: \<open>Ex (Is_partition (L o tick_of_price) m u)\<close>
       by (meson Const_Interval_def Partition_always_exists dual_order.strict_trans1 prems(1) prems(2))
@@ -454,7 +456,7 @@ lemma reserve_change_add_left:
 lemma reserve_change_add_right:
   \<open> 0 < l \<and> l \<le> m
 \<Longrightarrow> Const_Interval (L o tick_of_price) m u
-\<Longrightarrow> reserve_change L l m + reserve_change_in_a_step (L (tick_of_price m)) m u = reserve_change L l u\<close>
+\<Longrightarrow> reserve_change' L l m + reserve_change_in_a_step (L (tick_of_price m)) m u = reserve_change' L l u\<close>
   subgoal premises prems proof -
     have t1: \<open>Ex (Is_partition (L o tick_of_price) l m)\<close>
       by (simp add: Partition_always_exists prems(1))
@@ -463,9 +465,33 @@ lemma reserve_change_add_right:
     have t3: \<open>Is_partition (L o tick_of_price) l u (Eps (Is_key_partition (L o tick_of_price) l m) @ [m])\<close>
       by (metis Is_key_partition_implies_Is_partition Is_partition.simps(1) Is_partition_cat append_Cons append_Nil prems(2) t2)
     show ?thesis
-      unfolding reserve_change_def
-      by (metis (mono_tags, lifting) Is_key_partition_implies_Is_partition Is_partition.simps(1) append.right_neutral comp_apply partition_intergral_add partition_intergral_const prems(2) reserve_change_Is_linear_sum reserve_change_def reserve_change_irrelavent_with_partition t2 t3)
+      unfolding reserve_change'_def
+      by (metis (mono_tags, lifting) Is_key_partition_implies_Is_partition Is_partition.simps(1) append.right_neutral comp_apply partition_intergral_add partition_intergral_const prems(2) reserve_change_Is_linear_sum reserve_change'_def reserve_change_irrelavent_with_partition t2 t3)
   qed .
+
+
+lemma reserve_change'_LE_0:
+  \<open> 0 < l \<and> l \<le> u
+\<Longrightarrow> (\<forall>k. 0 \<le> L k)
+\<Longrightarrow> 0 \<le> reserve_change' L l u\<close>
+  subgoal premises prems
+proof -
+  have \<open>0 < l \<and> l \<le> u \<Longrightarrow> (\<forall>k. 0 \<le> L k) \<Longrightarrow>
+    Is_partition (L \<circ> tick_of_price) l u ps \<Longrightarrow>
+    0 \<le> partition_intergral reserve_change_in_a_step (L \<circ> tick_of_price) l u ps\<close> for ps
+    apply (induct ps arbitrary: l; simp add: reserve_change_in_a_step_def zero_prod_def less_eq_prod_def)
+    using frac_le apply blast
+    by (simp add: Const_Interval_def Is_partition_le_last frac_le)
+  then show ?thesis
+    unfolding reserve_change'_def
+    by (metis Partition_always_exists prems(1) prems(2) reserve_change'_def reserve_change_irrelavent_with_partition)
+qed .
+
+lemma reserve_change'_LE_0':
+  \<open> 0 < l \<and> l \<le> u
+\<Longrightarrow> (\<forall>k. 0 \<le> L k)
+\<Longrightarrow> 0 \<le> fst (reserve_change' L l u) \<and> 0 \<le> snd (reserve_change' L l u)\<close>
+  by (metis fst_zero less_eq_prod reserve_change'_LE_0 snd_zero)
 
 lemma fee_growth_is_0_when_not_zeroForOne:
   \<open> 0 < l \<and> l \<le> u
