@@ -1,5 +1,5 @@
 theory Uniswap_SwapMath
-  imports Uniswap_SqrtPriceMath Uniswap_Tick_Math UniSWP_Tick
+  imports Uniswap_SqrtPriceMath Uniswap_Tick_Math Uniswap_Tick
 begin
 
 definition reserve_change_in_a_step :: \<open>real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<times> real\<close>
@@ -34,7 +34,7 @@ definition \<open>fee_factor = fee / (1 - fee)\<close>
 
 lemma fee_factor_GT_0: \<open>0 < fee_factor\<close> unfolding fee_factor_def by auto
 
-definition fee_growth_in_a_tick :: \<open>bool \<Rightarrow> real \<Rightarrow> liquidity \<Rightarrow> int \<Rightarrow> real \<Rightarrow> real \<Rightarrow> (int \<Rightarrow> real \<times> real)\<close>
+definition fee_growth_in_a_tick :: \<open>bool \<Rightarrow> real \<Rightarrow> liquiditys \<Rightarrow> int \<Rightarrow> real \<Rightarrow> real \<Rightarrow> (int \<Rightarrow> real \<times> real)\<close>
   where \<open>fee_growth_in_a_tick zeroForOne factor L i price0 price1 =
     0(i:= (if L i = 0 then (0,0) else
             if zeroForOne then ((1/price0 - 1/price1) * factor, 0) else (0, (price1 - price0) * factor)))\<close>
@@ -337,7 +337,7 @@ lemma Partition_always_exists:
 lemmas Partition_always_exists' = Partition_always_exists[where L=id, simplified]
 
 
-lemma partition_intergral_irrelavent_with_parition':
+lemma partition_intergral_irrelavent_with_parition:
   \<open> Is_linear_sum S
 \<Longrightarrow> Is_partition L l u A
 \<Longrightarrow>  partition_intergral S L l u A = partition_intergral S L l u (Eps (Is_key_partition L l u))\<close>
@@ -401,7 +401,7 @@ lemma reserve_change_irrelavent_with_partition:
   \<open> Is_partition (L o tick_of_price) l u ps
 \<Longrightarrow> partition_intergral reserve_change_in_a_step (L o tick_of_price) l u ps = reserve_change' L l u\<close>
   unfolding reserve_change'_def
-  using partition_intergral_irrelavent_with_parition' reserve_change_Is_linear_sum by blast
+  using partition_intergral_irrelavent_with_parition reserve_change_Is_linear_sum by blast
 
 definition fee_growth'
   where \<open>fee_growth' zeroForOne factor L l u
@@ -420,7 +420,7 @@ lemma growth_irrelavent_with_partition:
   \<open> Is_partition tick_of_price l u ps
 \<Longrightarrow> partition_intergral (fee_growth_in_a_tick zeroForOne factor L) tick_of_price l u ps = fee_growth' zeroForOne factor L l u\<close>
   unfolding fee_growth'_def
-  using fee_growth_Is_linear_sum partition_intergral_irrelavent_with_parition' by blast
+  using fee_growth_Is_linear_sum partition_intergral_irrelavent_with_parition by blast
 
 lemma Const_Interval_x_x:
   \<open>Const_Interval (L \<circ> tick_of_price) x x\<close>
@@ -529,7 +529,7 @@ lemma fee_growth_add_left:
 \<Longrightarrow> fee_growth' zeroForOne factor L l m + fee_growth' zeroForOne factor L m u
         = fee_growth' zeroForOne factor L l u\<close>
   unfolding fee_growth'_def
-  by (smt (verit, ccfv_threshold) Is_partition_cat Partition_always_exists' fee_growth_Is_linear_sum partition_intergral_add partition_intergral_irrelavent_with_parition')
+  by (smt (verit, ccfv_threshold) Is_partition_cat Partition_always_exists' fee_growth_Is_linear_sum partition_intergral_add partition_intergral_irrelavent_with_parition)
 
 lemma fee_growth_add_left_in_a_tick:
   \<open> 0 < l \<and> m \<le> u

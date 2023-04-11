@@ -1,4 +1,4 @@
-theory UniSWP_Common
+theory Uniswap_Common
   imports HOL.Real Phi_Semantics.PhiSem_CF_Solidity
           Phi_Semantics.PhiSem_Real_Abst_Int
           Phi_Semantics.PhiSem_CF_Routine
@@ -12,7 +12,8 @@ type_synonym price = real
 type_synonym address = int
 type_synonym tick = int
 type_synonym growth = \<open>fee \<comment> \<open>fee0\<close> \<times> fee \<comment> \<open>fee1\<close>\<close> (* \<times> int \<times> real \<times> int, we don't consider observation feature now *)
-type_synonym liquidity = \<open>tick \<Rightarrow> real\<close>
+type_synonym liquidity = \<open>real\<close>
+type_synonym liquiditys = \<open>tick \<Rightarrow> real\<close>
 type_synonym growths = \<open>tick \<Rightarrow> growth\<close>
 
 

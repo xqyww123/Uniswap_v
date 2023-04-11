@@ -1,5 +1,5 @@
-theory UniSWP_TickBitmap
-  imports UniSWP_Common
+theory Uniswap_TickBitmap
+  imports Uniswap_Common
 begin
 
 (*will be a good case to test our \<phi>-type-fiction conversion.

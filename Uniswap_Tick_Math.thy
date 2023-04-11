@@ -1,5 +1,5 @@
 theory Uniswap_Tick_Math
-  imports UniSWP_Common HOL.Transcendental
+  imports Uniswap_Common HOL.Transcendental
 begin
 
 definition \<open>FACTOR = (1.0001::real)\<close>

@@ -1,5 +1,5 @@
 theory Uniswap_Pool
-  imports Uniswap_SwapMath Uniswap_Tick_Math UniSWP_TickBitmap UniSWP_Tick
+  imports Uniswap_SwapMath Uniswap_Tick_Math Uniswap_TickBitmap Uniswap_Tick
 begin
 
 no_notation Reals ("\<real>") (*TODO: use that patch!*)
@@ -123,7 +123,7 @@ locale Pool = Tickmap_spec + Tick_spec +
 begin
 
 
-definition Uniswap_Pool :: \<open>(fiction, price \<times> tick \<times> bool \<times> liquidity \<times> liquidity \<times> growths \<times> opt_growths \<times> fee_protocol \<times> (fee \<times> fee)) \<phi>\<close>
+definition Uniswap_Pool :: \<open>(fiction, price \<times> tick \<times> bool \<times> liquiditys \<times> liquiditys \<times> growths \<times> opt_growths \<times> fee_protocol \<times> (fee \<times> fee)) \<phi>\<close>
   where [\<phi>defs]: \<open>Uniswap_Pool x = (
     case x of (price, i, unlocked, Lg, L, growth, \<delta>, fee_proto, protocal_fees) \<Rightarrow>
         \<comment> \<open>\<open>growth\<close> is the abstract growth happened on every tick\<close>
@@ -180,7 +180,7 @@ definition \<open>\<Delta>protocal_fees fee_proto zeroForOne L price price' \<ga
 
 proc swap:
   input \<open>(price, i, unlocked, Lg, L, growth, \<delta>, fee_protocol, protocal_fees) \<Ztypecolon> Uniswap_Pool\<heavy_comma>
-         recipient \<Ztypecolon> \<v>\<a>\<l> Address\<heavy_comma> zeroForOne \<Ztypecolon> \<v>\<a>\<l> \<bool>\<heavy_comma> amount_specified \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> price_limit \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
+         zeroForOne \<Ztypecolon> \<v>\<a>\<l> \<bool>\<heavy_comma> amount_specified \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> price_limit \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   premises \<open>0 \<noteq> amount_specified \<and> 0 < price_limit\<close> and \<open>unlocked\<close>
       and \<open>if zeroForOne then price_limit < price \<and> price_limit > MIN_PRICE
                          else price_limit > price \<and> price_limit < MAX_PRICE\<close>

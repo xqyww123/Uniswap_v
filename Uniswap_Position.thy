@@ -1,5 +1,5 @@
-theory UniSWP_Position
-  imports UniSWP_Common
+theory Uniswap_Position
+  imports Uniswap_Common
 begin
 
 no_notation inter (infixl "Int" 70)

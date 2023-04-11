@@ -1,5 +1,5 @@
-theory UniSWP_Tick
-  imports UniSWP_Common
+theory Uniswap_Tick
+  imports Uniswap_Common
 begin
 
 
@@ -74,7 +74,7 @@ definition growth_outside :: \<open>growths \<Rightarrow> tick \<Rightarrow> gro
   abst: real (physical) growth
   delta: is some if initialized.
 *)
-definition Invt_A_Tick :: \<open>tick \<Rightarrow> tick \<Rightarrow> liquidity \<Rightarrow>  liquidity
+definition Invt_A_Tick :: \<open>tick \<Rightarrow> tick \<Rightarrow> liquiditys \<Rightarrow>  liquiditys
                                 \<Rightarrow> growths \<Rightarrow> growth option \<Rightarrow> tick_info \<Rightarrow> bool \<close>
   where \<open>Invt_A_Tick i current liquidity_gross liquidity growth \<delta> ti
           \<longleftrightarrow> tick_info.liquidityGross ti = liquidity_gross i \<and>
@@ -83,7 +83,7 @@ definition Invt_A_Tick :: \<open>tick \<Rightarrow> tick \<Rightarrow> liquidity
               tick_info.initialized ti = (\<delta> \<noteq> None)
         \<close>
 
-definition Invt_Ticks :: \<open>tick \<Rightarrow> liquidity \<Rightarrow> liquidity \<Rightarrow> growths \<Rightarrow> opt_growths
+definition Invt_Ticks :: \<open>tick \<Rightarrow> liquiditys \<Rightarrow> liquiditys \<Rightarrow> growths \<Rightarrow> opt_growths
                                \<Rightarrow> ticks \<Rightarrow> bool\<close>
   where \<open>Invt_Ticks current liquidity_gross liquidity growth \<delta> ticks
           \<longleftrightarrow> (\<forall>i. Invt_A_Tick i current liquidity_gross liquidity growth (\<delta> i) (ticks i))
@@ -103,7 +103,7 @@ locale Tick_resource =
   fixes RawTicks :: \<open>(fiction, ticks) \<phi>\<close>
 begin
 
-definition Ticks :: \<open>(fiction, (liquidity \<times> liquidity \<times> growths \<times> tick \<times> opt_growths)) \<phi>\<close>
+definition Ticks :: \<open>(fiction, (liquiditys \<times> liquiditys \<times> growths \<times> tick \<times> opt_growths)) \<phi>\<close>
   where [\<phi>defs]: \<open>Ticks x = (case x of (Lg, liquidity, growth, current, \<delta>) \<Rightarrow>
                     ticks \<Ztypecolon> RawTicks \<s>\<u>\<b>\<j> ticks. Invt_Ticks current Lg liquidity growth \<delta> ticks)\<close>
 

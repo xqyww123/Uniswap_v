@@ -1,5 +1,5 @@
 theory Uniswap_SqrtPriceMath
-  imports UniSWP_Common
+  imports Uniswap_Common
 begin
 
 proc getAmount0Delta':
