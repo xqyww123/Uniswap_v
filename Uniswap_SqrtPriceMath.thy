@@ -32,7 +32,7 @@ proc getAmount0Delta:
   is [routine]
   \<medium_left_bracket> if \<open>$liq < 0\<close>
     \<medium_left_bracket> neg (getAmount0Delta'($rA, $rB, \<open>-$liq\<close>)) \<medium_right_bracket>.
-    \<medium_left_bracket> getAmount0Delta'($rA, $rB, $liq) \<medium_right_bracket>. ;;
+    \<medium_left_bracket> getAmount0Delta'($rA, $rB, $liq) \<medium_right_bracket>.
   \<medium_right_bracket> using \<phi> apply auto
     apply (smt (z3) frac_le minus_divide_left)
     by (simp add: frac_le) .
@@ -61,7 +61,7 @@ proc getAmount1Delta:
   is [routine]
   \<medium_left_bracket> if \<open>$liq < 0\<close>
     \<medium_left_bracket> neg (getAmount1Delta' ($rA, $rB, \<open>-$liq\<close>)) \<medium_right_bracket>.
-    \<medium_left_bracket> getAmount1Delta' ($rA, $rB, $liq) \<medium_right_bracket>. ;;
+    \<medium_left_bracket> getAmount1Delta' ($rA, $rB, $liq) \<medium_right_bracket>.
   \<medium_right_bracket> using \<phi> apply auto
     by (smt (verit, ccfv_threshold) zero_less_mult_iff) .
 
@@ -91,7 +91,7 @@ proc getAmount0Delta'_rounded:
         ceiling
     \<medium_right_bracket>. \<medium_left_bracket>
       \<open>$numerator1 * $numerator2 / $rB / $rA\<close> (* is \<open>real liq * \<bar>rB - rA\<bar> / rB / rA\<close> *) floor
-    \<medium_right_bracket>. ;;
+    \<medium_right_bracket>.
   \<medium_right_bracket> using \<phi> apply auto
       apply (smt (verit, del_insts) divide_nonneg_pos mult_nonneg_nonneg mult_pos_pos of_nat_0_le_iff)
     apply (smt (verit, ccfv_SIG) diff_frac_eq divide_nonneg_nonneg mult.commute mult_nonneg_nonneg of_nat_0_le_iff right_diff_distrib)
@@ -108,7 +108,7 @@ proc getAmount0Delta_rounded:
   is [routine]
   \<medium_left_bracket> if \<open>$liq < 0\<close>
     \<medium_left_bracket> $rA $rB \<open>-$liq\<close> \<open>False\<close> getAmount0Delta'_rounded \<medium_right_bracket>.
-    \<medium_left_bracket> $rA $rB $liq \<open>True\<close> getAmount0Delta'_rounded \<medium_right_bracket>. ;;
+    \<medium_left_bracket> $rA $rB $liq \<open>True\<close> getAmount0Delta'_rounded \<medium_right_bracket>.
   \<medium_right_bracket> using \<phi> apply auto
     apply (smt (verit, ccfv_SIG) divide_minus_left frac_less2 of_int_less_0_iff)
     by (metis abs_of_nonneg diff_less_0_iff_less div_0 frac_less2 linorder_not_less not_less_iff_gr_or_eq of_int_0 of_int_pos) .
