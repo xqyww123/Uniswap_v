@@ -121,8 +121,6 @@ proc (nodef) MAX_PRICE[\<phi>synthesis 1100]:
   output \<open>MAX_PRICE \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   \<medium_left_bracket> op_const_areal[where x=\<open>MAX_PRICE\<close>] \<medium_right_bracket>. .
 
-thm price_of_tick
-
 lemma
   \<open>0 < p \<Longrightarrow> p < price_of A \<Longrightarrow> tick_of_price p < A\<close>
   using price_of_smono price_of_tick by fastforce

@@ -931,16 +931,16 @@ proc computeSwapStep:
 
     text \<open>We use some local definitions that save us from the very long expressions.\<close>
 
-    define amount_remain' where \<open>amount_remain' = (if ?exactIn then amount_remain * (1 - feePips) else amount_remain)\<close>
+    define amount_remain' where \<open>amount_remain' = (if $exactIn then amount_remain * (1 - feePips) else amount_remain)\<close>
     define max_amount where \<open>max_amount =
-        (if ?zeroForOne XAND ?exactIn then L / price_target - L / price else L * (price_target - price))\<close>
-    define \<Delta>amount where \<open>\<Delta>amount = (if ?exactIn then min amount_remain' max_amount else max amount_remain' max_amount)\<close>
+        (if $zeroForOne XAND $exactIn then L / price_target - L / price else L * (price_target - price))\<close>
+    define \<Delta>amount where \<open>\<Delta>amount = (if $exactIn then min amount_remain' max_amount else max amount_remain' max_amount)\<close>
     define next_price where \<open>next_price =
-        (if L = 0 then price_target else if ?zeroForOne XAND ?exactIn then (L / (L / price + \<Delta>amount)) else price + \<Delta>amount / L)\<close> 
+        (if L = 0 then price_target else if $zeroForOne XAND $exactIn then (L / (L / price + \<Delta>amount)) else price + \<Delta>amount / L)\<close> 
     define amountIn where \<open>amountIn =
-        (if ?zeroForOne then L / next_price - L / price else L * (next_price - price))\<close>
+        (if $zeroForOne then L / next_price - L / price else L * (next_price - price))\<close>
     define amountOut where \<open>amountOut =
-        (if ?zeroForOne then L * (price - next_price) else L / price - L / next_price)\<close> ;;
+        (if $zeroForOne then L * (price - next_price) else L / price - L / next_price)\<close> ;;
 
     if \<open>$exactIn\<close> \<medium_left_bracket>
       \<open>$amount_remain * (1 - $feePips)\<close> \<rightarrow> val amountRemainingLessFee ;;
@@ -975,7 +975,7 @@ proc computeSwapStep:
 
     text \<open>Now we claim two intermediate lemmas that will help the later construction.\<close>
 
-    have t1[simp]: \<open>?zeroForOne \<Longrightarrow> price_target \<le> next_price \<and> next_price \<le> price\<close>
+    have t1[simp]: \<open>$zeroForOne \<Longrightarrow> price_target \<le> next_price \<and> next_price \<le> price\<close>
       unfolding \<Delta>amount_def max_amount_def amount_remain'_def next_price_def
       using \<phi> apply (auto simp add: min_def max_def not_le)
       apply (smt (verit) divide_pos_pos mult.commute mult_nonneg_nonneg pos_le_divide_eq)
@@ -987,7 +987,7 @@ proc computeSwapStep:
       apply (smt (verit, ccfv_SIG) divide_le_cancel nonzero_mult_div_cancel_left)
       by (simp add: divide_nonpos_pos)
 
-    have t2[simp]: \<open>\<not> ?zeroForOne \<Longrightarrow> price \<le> next_price \<and> next_price \<le> price_target\<close>
+    have t2[simp]: \<open>\<not> $zeroForOne \<Longrightarrow> price \<le> next_price \<and> next_price \<le> price_target\<close>
       unfolding \<Delta>amount_def max_amount_def amount_remain'_def next_price_def
       using \<phi> apply (auto simp add: min_def max_def not_le)
       apply (smt (verit, ccfv_SIG) frac_less2)
@@ -1014,7 +1014,7 @@ proc computeSwapStep:
       \<rightarrow> amountOut is amountOut affirm unfolding amountOut_def using \<phi> by auto
     \<medium_right_bracket>. ;;
   
-  have t3: \<open>\<not> ?exactIn \<Longrightarrow> amountOut \<le> - amount_remain\<close>
+  have t3: \<open>\<not> $exactIn \<Longrightarrow> amountOut \<le> - amount_remain\<close>
     unfolding amountOut_def next_price_def \<Delta>amount_def amount_remain'_def max_amount_def
     using \<phi> by auto
   text \<open>Therefore, when there is no precision lost, the following branch will never be entered\<close> ;;

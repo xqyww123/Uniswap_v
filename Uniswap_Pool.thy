@@ -264,8 +264,8 @@ proc swap:
                \<and> (let (\<Delta>reserve0, \<Delta>reserve1) = reserve_change zeroForOne L price pr;
                       amountIn = (if zeroForOne then \<Delta>reserve0 else \<Delta>reserve1) ;
                       amountOut = (if zeroForOne then \<Delta>reserve1 else \<Delta>reserve0)
-                   in (if ?exactInput then amount_specified - amountIn / (1 - fee_rate) else amount_specified + amountOut) = ar
-                    \<and> (if ?exactInput then - amountOut else amountIn / (1 - fee_rate)) = ac
+                   in (if $exactInput then amount_specified - amountIn / (1 - fee_rate) else amount_specified + amountOut) = ar
+                    \<and> (if $exactInput then - amountOut else amountIn / (1 - fee_rate)) = ac
                     \<and> (if 0 < fee_proto then amountIn * fee_rate' / real fee_proto else 0) = pf
                ))
           \<and> Guard: (ar \<noteq> 0 \<and> pr \<noteq> price_limit)\<close>
@@ -326,7 +326,7 @@ proc swap:
         $price,
         sel ($price_limit, $step_price_next,
                 sel (\<open>$step_price_next < $price_limit\<close>, \<open>$step_price_next > $price_limit\<close>, $zeroForOne))
-         is \<open>if zeroForOne then max ?step_price_next price_limit else min ?step_price_next price_limit\<close>,
+         is \<open>if zeroForOne then max $step_price_next price_limit else min $step_price_next price_limit\<close>,
         $liquidity,
         $amount_remaining,
         fee)
@@ -340,7 +340,7 @@ proc swap:
 
       have t1[simp]: \<open>L j = 0 \<Longrightarrow> fee_amount = 0\<close> using \<open>_ = swap_step _ _ _ _ _\<close> by (auto simp add: swap_step_def Let_def)
 
-      have kk1: \<open>MIN_PRICE < (if zeroForOne then max ?step_price_next price_limit else min ?step_price_next price_limit)\<close> using price_of_smono the_\<phi>(24) the_\<phi>(27) the_\<phi>(31) the_\<phi>(33) the_\<phi>lemmata(2) x1' by force
+      have kk1: \<open>MIN_PRICE < (if zeroForOne then max $step_price_next price_limit else min $step_price_next price_limit)\<close> using price_of_smono the_\<phi>(24) the_\<phi>(27) the_\<phi>(31) the_\<phi>(33) the_\<phi>lemmata(2) x1' by force
 
       have kk2: \<open>MIN_PRICE < next_price\<close> using fee_rate_range kk1 swap_step_next_price_Le_MIN_PRICE the_\<phi>(16) the_\<phi>(25) the_\<phi>(31) the_\<phi>lemmata(5) by blast
 
