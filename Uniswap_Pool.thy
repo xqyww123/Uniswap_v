@@ -330,8 +330,8 @@ proc swap:
         $liquidity,
         $amount_remaining,
         fee)
-        \<exists>next_price, amountIn, amountOut, fee_amount
-     \<rightarrow> val amountIn, amountOut, feeAmount \<rightarrow> price ;;
+        \<exists>next_price, amountIn, amountOut, fee_amount 
+      \<rightarrow> price, val amountIn, amountOut, feeAmount ;;
      (*FIX ME: ^ there is a bug in programming system*)
 
       have d2: \<open>fee_amount = amountIn * fee_rate'\<close> unfolding fee_rate'_def using swap_step_fee_amout the_\<phi>(19) by force
