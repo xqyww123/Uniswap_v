@@ -5,6 +5,8 @@ theory Uniswap_Common
           Phi_Semantics.PhiSem_Variable
 begin
 
+term \<real>
+ML \<open>@{term \<real>}\<close>
 
 type_synonym token = int
 type_synonym fee = real

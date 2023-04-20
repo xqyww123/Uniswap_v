@@ -2,8 +2,6 @@ theory Uniswap_Pool
   imports Uniswap_SwapMath Uniswap_Tick_Math Uniswap_TickBitmap Uniswap_Tick
 begin
 
-no_notation Reals ("\<real>") (*TODO: use that patch!*)
-
 type_synonym fee_protocol = \<open>nat \<times> nat\<close>
 
 datatype pool = pool (price: real) (tick: int) (unlocked: bool) (liquidity: real)
@@ -160,15 +158,6 @@ lemma [\<phi>reason 100]:
 
 declare Invt_Ticks_def[simp] Invt_A_Tick_def[simp]
 
-(*
-definition swap_loop_transition :: \<open>bool \<Rightarrow> bool \<Rightarrow> nat \<times> nat \<Rightarrow> liquidity \<Rightarrow> tick \<times> fee \<Rightarrow> unit\<close>
-  where \<open>swap_loop_transition exactIn zeroForOne fee_protocol L
-    =(\<lambda>(j,ar).
-      let fee_proto = (if zeroForOne then fst fee_protocol else snd fee_protocol) ;
-          (next_price, amountIn, amountOut, fee_amount) =
-  swap_step pr (if zeroForOne then max (price_of tick_next) price_limit else min (price_of tick_next) price_limit) (L j) ar fee
-       in ())\<close> *)
-
 definition \<open>\<Delta>protocal_fees fee_proto zeroForOne L price price' \<gamma>
     = (if zeroForOne
        then if 0 < fst fee_proto
@@ -225,7 +214,7 @@ proc swap:
 
     define fee_proto where \<open>fee_proto = (if zeroForOne then fst fee_protocol else snd fee_protocol)\<close> ;;
  
-    \<open>pool.liquidity _\<close> \<rightarrow> val liquidityStart
+    get_pool_liquidity \<rightarrow> val liquidityStart
     sel (get_fee_protocol_0, get_fee_protocol_1, $zeroForOne)
         is fee_proto affirm unfolding fee_proto_def by simp ;; \<rightarrow> val feeProtocol
     \<open>0 \<Ztypecolon> \<real>\<close> \<rightarrow> val secondsPerLiquidityCumulative
@@ -286,8 +275,6 @@ proc swap:
 
       have t0[useful]: \<open>0 < pr\<close> by (smt (verit) the_\<phi>(25) the_\<phi>(3) the_\<phi>(33))
 
-      have t2: \<open>0 < Lg tick_next' \<Longrightarrow> 0 < Lg tick_next\<close> by (smt (verit, ccfv_SIG) \<open>tick_next \<in> {MIN_TICK..MAX_TICK} \<and> (if tick_next' < MIN_TICK then MIN_TICK else if MAX_TICK < tick_next' then MAX_TICK else tick_next') = tick_next \<and> True\<close> the_\<phi>(18))
-
       have tick_next_dom: \<open>MIN_TICK \<le> tick_next\<close> \<open>tick_next \<le> MAX_TICK\<close> using the_\<phi>(4) the_\<phi>(5) by blast+
 
       have y0: \<open>if j < tick_next' then next_initialized Lg j tick_next' else next_initialized Lg (tick_next') (j+1)\<close>
@@ -314,13 +301,9 @@ proc swap:
       have t11: \<open>\<And>k. \<not> zeroForOne \<Longrightarrow> k < tick_next \<Longrightarrow> j \<le> k \<Longrightarrow> L k = L j\<close>
         subgoal premises Ps for k
           using t8' Ps(2) apply (induct rule: int_ge_induct[where k=j and i=\<open>k\<close>, OF Ps(3)]; simp)
-          using Ps(1) the_\<phi>(14) by fastforce . 
+          using Ps(1) the_\<phi>(14) by fastforce . ;;
 
-      have lx1: \<open>\<not> zeroForOne \<Longrightarrow> global_fee0_growth ?growth' = global_fee0_growth growth\<close> by (simp add: fee_growth_is_0_when_not_zeroForOne the_\<phi>(25) the_\<phi>(3))
-
-      have lx2: \<open>zeroForOne \<Longrightarrow> global_fee1_growth ?growth' = global_fee1_growth growth\<close> by (simp add: fee_growth_is_0_when_zeroForOne t0 the_\<phi>(25)) ;;
-
-      getSqrtRatioAtTick ($tick_next) \<rightarrow> val step_price_next ;;
+      getSqrtRatioAtTick ($tick_next) \<rightarrow> val step_price_next
 
       computeSwapStep (
         $price,
@@ -329,16 +312,13 @@ proc swap:
          is \<open>if zeroForOne then max $step_price_next price_limit else min $step_price_next price_limit\<close>,
         $liquidity,
         $amount_remaining,
-        fee)
-        \<exists>next_price, amountIn, amountOut, fee_amount 
-      \<rightarrow> price, val amountIn, amountOut, feeAmount ;;
-     (*FIX ME: ^ there is a bug in programming system*)
+        fee
+      ) \<exists>next_price, amountIn, amountOut, fee_amount
+      \<rightarrow> price, val amountIn, amountOut, feeAmount
 
       have d2: \<open>fee_amount = amountIn * fee_rate'\<close> unfolding fee_rate'_def using swap_step_fee_amout the_\<phi>(19) by force
 
       have d1[simp]: \<open>amountIn + fee_amount = amountIn / (1 - fee_rate)\<close> by (smt (verit, ccfv_threshold) ab_semigroup_mult_class.mult_ac(1) add.commute add_diff_cancel_left' cancel_comm_monoid_add_class.diff_cancel comm_semiring_class.distrib d2 diff_add_eq diff_diff_eq2 diff_zero div_by_1 divide_cancel_right divide_divide_eq_left divide_divide_eq_left' divide_divide_eq_right divide_eq_0_iff divide_real_def eq_divide_imp fee_rate_range linorder_not_le minus_diff_eq mult.commute mult.left_commute mult.right_neutral mult_1 mult_cancel_left2 mult_eq_0_iff mult_zero_left mult_zero_right nle_le nonzero_divide_mult_cancel_left nonzero_mult_div_cancel_left order_refl real_divide_square_eq right_diff_distrib' ring_class.ring_distribs(1) times_divide_eq_left fee_rate'_def)
-
-      have t1[simp]: \<open>L j = 0 \<Longrightarrow> fee_amount = 0\<close> using \<open>_ = swap_step _ _ _ _ _\<close> by (auto simp add: swap_step_def Let_def)
 
       have kk1: \<open>MIN_PRICE < (if zeroForOne then max $step_price_next price_limit else min $step_price_next price_limit)\<close> using price_of_smono the_\<phi>(24) the_\<phi>(27) the_\<phi>(31) the_\<phi>(33) the_\<phi>lemmata(2) x1' by force
 
@@ -356,10 +336,6 @@ proc swap:
         by (auto,
             smt (verit, ccfv_threshold) fee_rate_range kk9 price_of_L0 swap_step_next_price_Gt t0 the_\<phi>(16) the_\<phi>(25) the_\<phi>(27) the_\<phi>lemmata(5),
             smt (verit, ccfv_SIG) fee_rate_range price_of_L0 swap_step_next_price_LE_price swap_step_next_price_LE_price_target t0 the_\<phi>(16) the_\<phi>(27) the_\<phi>lemmata(5))
-
-      have ka1: \<open>zeroForOne \<Longrightarrow> \<forall>k. tick_of_price next_price < k \<and> k < tick_of_price pr \<longrightarrow> Lg k = 0\<close> by (metis dual_order.strict_trans2 kk6 order.strict_iff_not price_of_L0 t8 the_\<phi>(28) tick_of_price tick_of_price_LE_mono zle_add1_eq_le)
-
-      have ka2: \<open>\<not> zeroForOne \<Longrightarrow> \<forall>k. tick_of_price pr < k \<and> k < tick_of_price next_price \<longrightarrow> Lg k = 0\<close> by (smt (verit, del_insts) kk2 kk7 price_of_L0 the_\<phi>(28) tick_of_price tick_of_price_LE_mono y1)
 
       have kb1: \<open>zeroForOne \<Longrightarrow> \<forall>k. next_price \<le> k \<and> k < pr \<longrightarrow> L (tick_of_price k) = L j\<close>
         by (smt (verit) kk6 price_of_L0 price_of_tick t7 the_\<phi>(28) tick_of_price tick_of_price_LE_mono)
@@ -383,7 +359,7 @@ proc swap:
         by (smt (verit, ccfv_SIG) growth.fee1 kk7 kk9 mult.commute mult_cancel_right p2 reserve_change_in_a_step_def swap_step_reserve_change_not_zeroForOne the_\<phi>lemmata(5)) ;;
 
 
-      if \<open>$exactInput\<close> \<medium_left_bracket>
+      if $exactInput \<medium_left_bracket>
           \<open>$amount_remaining - ($amountIn + $feeAmount)\<close> \<rightarrow> amount_remaining
           \<open>$amount_calculated - $amountOut\<close> \<rightarrow> amount_calculated
       \<medium_right_bracket>. \<medium_left_bracket>
@@ -424,22 +400,23 @@ proc swap:
 
       if \<open>$price = $step_price_next\<close> \<medium_left_bracket>
 
-        if \<open>$initialized\<close> \<medium_left_bracket>
+        if $initialized \<medium_left_bracket>
 
-           $tick_next,
+          tick_cross[where \<Delta>=\<Delta>growth] (
 
-           sel ($fee_growth_global, \<open>growth.fee0 (pool.growth _)\<close>, $zeroForOne)
+            $tick_next,
+
+            sel ($fee_growth_global, \<open>growth.fee0 (pool.growth _)\<close>, $zeroForOne)
               is \<open>global_fee0_growth (?growth' + \<Delta>growth)\<close>
               affirm unfolding I_fee_growth_global_def \<Delta>growth_def
                 by (auto simp add: zero_fun_def, insert fee_growth_is_0_when_not_zeroForOne kk9 the_\<phi>(1) the_\<phi>(29), force) ;;
 
-           sel (\<open>growth.fee1 (pool.growth _)\<close>, $fee_growth_global, $zeroForOne)
+            sel (\<open>growth.fee1 (pool.growth _)\<close>, $fee_growth_global, $zeroForOne)
               is \<open>global_fee1_growth (?growth' + \<Delta>growth)\<close>
               affirm unfolding I_fee_growth_global_def \<Delta>growth_def
                 by (auto simp add: zero_fun_def) (smt (verit, ccfv_SIG) fee_growth_is_0_when_zeroForOne kk2 kk8 price_of_L0 the_\<phi>(29)) ;;
-           (*TODO: syntax*)
-           tick_cross[where \<Delta>=\<Delta>growth]
-              affirm using t2 the_\<phi>(19) by presburger ;;
+           )
+              affirm using the_\<phi>(18) the_\<phi>(19) tick_next_def by auto ;;
               affirm using y1 by fastforce ;;
               affirm unfolding \<Delta>growth_def apply auto
                       using fee_growth_eq_0 kk2 kk8 the_\<phi>(20) the_\<phi>(32) apply force
@@ -463,13 +440,13 @@ proc swap:
                 using x1' apply linarith
                 using x1 by blast ;;
 
-            if \<open>$zeroForOne\<close> \<medium_left_bracket> \<open>- $liquidityNet\<close> \<rightarrow> liquidityNet \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
+            if $zeroForOne \<medium_left_bracket> \<open>- $liquidityNet\<close> \<rightarrow> liquidityNet \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
               
               \<open>$liquidity + $liquidityNet\<close> \<rightarrow> $liquidity is \<open>L real_next_tick\<close> affirm unfolding real_next_tick_def by (smt (verit, ccfv_SIG) t11 t7 x1 x1')
 
-            \<medium_right_bracket>. \<medium_left_bracket> 
+            \<medium_right_bracket>. \<medium_left_bracket>
 
-              \<open>_ \<Ztypecolon> \<v>\<a>\<r>[liquidity] _\<close> is \<open>L real_next_tick\<close> affirm unfolding real_next_tick_def
+              \<open>\<v>\<a>\<r>[liquidity]\<close> is \<open>L real_next_tick\<close> affirm unfolding real_next_tick_def
               by (auto,
                   smt (verit, del_insts) \<open>tick_next \<in> {MIN_TICK..MAX_TICK} \<and> (if tick_next' < MIN_TICK then MIN_TICK else if MAX_TICK < tick_next' then MAX_TICK else tick_next') = tick_next \<and> True\<close> t7 the_\<phi>(14) the_\<phi>(15) the_\<phi>(19) the_\<phi>(31) x1 y0,
                   smt (verit, ccfv_threshold) kk2 kk4 t11 the_\<phi>(14) the_\<phi>(15) the_\<phi>(19) the_\<phi>(20) the_\<phi>lemmata(4) tick_next_def) ;;
@@ -492,10 +469,12 @@ proc swap:
 
         \<medium_right_bracket>.
 
-        \<open>$tick_next - 1\<close> to Tick affirm using kk2 nle_le the_\<phi>(21) tick_next_dom(1) tick_next_dom(2) by force ;;
-        $tick_next, $zeroForOne
-        sel is \<open>real_next_tick\<close> affirm unfolding real_next_tick_def .. ;; (*TODO: syntax*)
-          \<rightarrow> tick 
+        sel (
+          \<open>$tick_next - 1\<close> to Tick affirm using kk2 nle_le the_\<phi>(21) tick_next_dom(1) tick_next_dom(2) by force ;;
+          $tick_next,
+          $zeroForOne
+        ) is \<open>real_next_tick\<close> affirm unfolding real_next_tick_def .. ;;
+        \<rightarrow> tick 
 
         have kk5[simp]: \<open>real_next_tick < MAX_TICK\<close> unfolding real_next_tick_def by (smt (verit, best) kk4 the_\<phi>(19) tick_next_dom(2))
 
@@ -515,7 +494,7 @@ proc swap:
         \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. is \<open>tick_of_price next_price\<close>
           affirm by (smt (verit, best) fee_rate_range kk7 swap_step_next_price_Le t0 the_\<phi>(18) the_\<phi>(22) the_\<phi>(27) the_\<phi>(28) the_\<phi>(31) tick_of_price zx1 zz7) ;;
 
-        \<open>\<v>\<a>\<r>[liquidity] _\<close> is \<open>L (tick_of_price next_price)\<close> affirm using zxx . ;;
+        \<open>\<v>\<a>\<r>[liquidity]\<close> is \<open>L (tick_of_price next_price)\<close> affirm using zxx . ;;
 
         shift_current_tick_\<Delta>[where j=\<open>tick_of_price next_price\<close> and \<Delta>=\<Delta>growth]
           affirm using the_\<phi>(4) the_\<phi>(5) by fastforce ;;
@@ -536,9 +515,9 @@ proc swap:
       define real2_next_tick where
         \<open>real2_next_tick = (if next_price = price_of tick_next then real_next_tick else tick_of_price next_price)\<close> ;;
 
-      \<open>\<v>\<a>\<r>[tick] _\<close> is real2_next_tick affirm unfolding real2_next_tick_def by simp ;;
-      \<open>\<v>\<a>\<r>[liquidity] _\<close> is \<open>L real2_next_tick\<close> affirm unfolding real2_next_tick_def by simp ;;
-      \<open>_ \<Ztypecolon> Ticks\<close> is \<open>(Lg, L, ?growth' + \<Delta>growth, real2_next_tick, \<delta>)\<close> affirm unfolding real2_next_tick_def by simp
+      \<open>\<v>\<a>\<r>[tick]\<close>      is  real2_next_tick    affirm unfolding real2_next_tick_def by simp ;;
+      \<open>\<v>\<a>\<r>[liquidity]\<close> is \<open>L real2_next_tick\<close> affirm unfolding real2_next_tick_def by simp ;;
+      \<open>Ticks\<close> is \<open>(Lg, L, ?growth' + \<Delta>growth, real2_next_tick, \<delta>)\<close> affirm unfolding real2_next_tick_def by simp
 
       have Iv1: \<open>real2_next_tick < MAX_TICK\<close>
         unfolding real2_next_tick_def apply (auto simp add: the_\<phi>lemmata(5))
@@ -556,11 +535,11 @@ proc swap:
 
       have p3: \<open>if zeroForOne then Const_Interval (L o tick_of_price) next_price pr
                               else Const_Interval (L o tick_of_price) pr next_price\<close>
-        apply (auto simp add: Const_Interval_def)
-        using kk8 apply fastforce
-        using kb1 apply force
-        using kk9 apply blast
-        using kb2 by fastforce
+        by (auto simp add: Const_Interval_def,
+            insert kk8, fastforce,
+            insert kb1, force,
+            insert kk9, blast,
+            insert kb2, fastforce)
 
       have Iv6: \<open>if zeroForOne then reserve_change' L next_price price = (amountIn, amountOut) + reserve_change' L pr price
                           else reserve_change' L price next_price = reserve_change' L price pr + (amountOut, amountIn)\<close>
@@ -603,7 +582,8 @@ proc swap:
   have proto_fee'_LE0: \<open>0 \<le> proto_fee'\<close>
     unfolding proto_fee' using \<open>0 < price\<close> fee_rate'_GT_0 reserve_change'_LE_0' the_\<phi>(1) the_\<phi>(12) the_\<phi>lemmata(6) by force ;;
 
-  if \<open>$zeroForOne\<close> \<medium_left_bracket>
+  if $zeroForOne \<medium_left_bracket>
+
     set_pool_fee_growth_0 ($fee_growth_global)
     is \<open>pool _ _ _ _ (gSum (growth + fee_growth zeroForOne fee_rate' L price price')) _ _\<close>
     affirm by (auto simp add: prod_eq_iff growth.map_fee0_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>(15)) (metis fee_growth_is_0_when_zeroForOne growth.fee1_def the_\<phi>(1) the_\<phi>(15) the_\<phi>(18)) ;;
@@ -611,6 +591,7 @@ proc swap:
     if \<open>$protocolFee > 0\<close> \<medium_left_bracket> set_pool_protocal_fee_0 (\<open>fst (pool.protocol_fees _) + $protocolFee\<close>) \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
 
    \<medium_right_bracket>. \<medium_left_bracket>
+
     set_pool_fee_growth_1 ($fee_growth_global)
     is \<open>pool _ _ _ _ (gSum (growth + fee_growth zeroForOne fee_rate' L price price')) _ _\<close>
     affirm by (auto simp add: prod_eq_iff growth.map_fee1_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>(15)) (metis \<open>0 < price\<close> fee_growth_is_0_when_not_zeroForOne growth.fee0_def the_\<phi>(15) the_\<phi>(18))  ;;
@@ -626,26 +607,25 @@ proc swap:
     using fee_proto_def proto_fee' proto_fee'_LE0 apply force
     using fee_proto_def proto_fee' proto_fee'_LE0 by fastforce ;;
 
-
-  ;; if \<open>$zeroForOne = $exactInput\<close>
-      \<medium_left_bracket> \<open>$amount_specified - $amount_remaining\<close>, $amount_calculated \<medium_right_bracket>.
-      \<medium_left_bracket> $amount_calculated, \<open>$amount_specified - $amount_remaining\<close> \<medium_right_bracket>. \<rightarrow> val amount0, amount1 ;;
+  if \<open>$zeroForOne = $exactInput\<close>
+    \<medium_left_bracket> \<open>$amount_specified - $amount_remaining\<close>, $amount_calculated \<medium_right_bracket>.
+    \<medium_left_bracket> $amount_calculated, \<open>$amount_specified - $amount_remaining\<close> \<medium_right_bracket>. \<rightarrow> val amount0, amount1
   
   $amount0 is \<open>if zeroForOne then fst (reserve_change' L price' price) / (1 - fee_rate)
-                    else - fst (reserve_change' L price price')\<close>
-  affirm by (auto; insert the_\<phi>(16), force) ;; \<rightarrow> val amount0
+                             else - fst (reserve_change' L price price')\<close>
+           affirm by (auto; insert the_\<phi>(16), force) ;; \<rightarrow> val amount0
 
   $amount1 is \<open>if zeroForOne then - snd (reserve_change' L price' price)
-                    else snd (reserve_change' L price price') / (1 - fee_rate)\<close>
-  affirm by (auto; insert the_\<phi>(16), force) ;; \<rightarrow> val amount1
+                             else snd (reserve_change' L price price') / (1 - fee_rate)\<close>
+           affirm by (auto; insert the_\<phi>(16), force) ;; \<rightarrow> val amount1
 
-  if \<open>$zeroForOne\<close> \<medium_left_bracket>
+  if $zeroForOne \<medium_left_bracket>
     if \<open>$amount1 < 0\<close> \<medium_left_bracket> \<open>-$amount1\<close> \<medium_right_bracket>. \<medium_left_bracket> \<open>0 \<Ztypecolon> \<real>\<close> \<medium_right_bracket>.
     is \<open>snd (reserve_change' L price' price)\<close>
-    affirm apply auto
-        apply (smt (verit) reserve_change'_LE_0' the_\<phi>(1) the_\<phi>(12) the_\<phi>lemmata(6))
-        using the_\<phi>(15) apply blast
-        using the_\<phi>(15) by force ;;
+    affirm by (auto,
+              smt (verit) reserve_change'_LE_0' the_\<phi>(1) the_\<phi>(12) the_\<phi>lemmata(6),
+              insert the_\<phi>(15), blast,
+              insert the_\<phi>(15), force) ;;
 
     $amount0 is \<open>fst (reserve_change' L price' price) / (1 - fee_rate)\<close>
   \<medium_right_bracket>. \<medium_left_bracket>
@@ -656,13 +636,13 @@ proc swap:
     $amount1 is \<open>snd (reserve_change' L price price') / (1 - fee_rate)\<close>
   \<medium_right_bracket>.
 
-  set_pool_unlock (\<open>True\<close>)
+  set_pool_unlock (True)
 
-  \<medium_right_bracket> apply (auto simp add: \<phi>)
-    apply (smt (verit, best) \<open>(if zeroForOne = (0 < amount_specified) then amount_specified - amount_remaining' else amount_calculated') = (if zeroForOne then fst (reserve_change' L price' price) / (1 - fee_rate) else - fst (reserve_change' L price price'))\<close> fee_rate_range nonzero_divide_eq_eq the_\<phi>lemmata(8))
-    using \<open>(if zeroForOne = (0 < amount_specified) then amount_calculated' else amount_specified - amount_remaining') = (if zeroForOne then - snd (reserve_change' L price' price) else snd (reserve_change' L price price') / (1 - fee_rate))\<close> the_\<phi>lemmata(8) apply force
-    using \<open>(if zeroForOne = (0 < amount_specified) then amount_calculated' else amount_specified - amount_remaining') = (if zeroForOne then - snd (reserve_change' L price' price) else snd (reserve_change' L price price') / (1 - fee_rate))\<close> \<open>0 \<noteq> amount_specified \<and> 0 < price_limit\<close> the_\<phi>lemmata(8) apply force
-    using \<open>(if zeroForOne = (0 < amount_specified) then amount_specified - amount_remaining' else amount_calculated') = (if zeroForOne then fst (reserve_change' L price' price) / (1 - fee_rate) else - fst (reserve_change' L price price'))\<close> the_\<phi>lemmata(8) by force .
+  \<medium_right_bracket> by (auto simp add: \<phi>,
+        smt (verit, best) \<open>(if zeroForOne = (0 < amount_specified) then amount_specified - amount_remaining' else amount_calculated') = (if zeroForOne then fst (reserve_change' L price' price) / (1 - fee_rate) else - fst (reserve_change' L price price'))\<close> fee_rate_range nonzero_divide_eq_eq the_\<phi>lemmata(8),
+        insert \<open>(if zeroForOne = (0 < amount_specified) then amount_calculated' else amount_specified - amount_remaining') = (if zeroForOne then - snd (reserve_change' L price' price) else snd (reserve_change' L price price') / (1 - fee_rate))\<close> the_\<phi>lemmata(8), force,
+        insert \<open>(if zeroForOne = (0 < amount_specified) then amount_calculated' else amount_specified - amount_remaining') = (if zeroForOne then - snd (reserve_change' L price' price) else snd (reserve_change' L price price') / (1 - fee_rate))\<close> \<open>0 \<noteq> amount_specified \<and> 0 < price_limit\<close> the_\<phi>lemmata(8), force,
+        insert \<open>(if zeroForOne = (0 < amount_specified) then amount_specified - amount_remaining' else amount_calculated') = (if zeroForOne then fst (reserve_change' L price' price) / (1 - fee_rate) else - fst (reserve_change' L price price'))\<close> the_\<phi>lemmata(8), force) .
 
 end
 
