@@ -21,9 +21,7 @@ proc getAmount0Delta':
     require (\<open> $rA > 0 \<close>) ;;
 
     \<open>$numerator1 * $numerator2 / $rA / $rB\<close>
-  \<medium_right_bracket> using \<phi> apply auto
-    apply (smt (verit, ccfv_SIG) diff_divide_distrib diff_frac_eq divide_strict_left_mono mult_pos_pos right_diff_distrib)
-    by (smt (verit) diff_frac_eq divide_nonneg_nonneg right_diff_distrib' split_mult_pos_le) .
+  \<medium_right_bracket>. .
 
 proc getAmount0Delta:
   input \<open>rA \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> rB \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> liq \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
@@ -33,9 +31,7 @@ proc getAmount0Delta:
   \<medium_left_bracket> if \<open>$liq < 0\<close>
     \<medium_left_bracket> neg (getAmount0Delta'($rA, $rB, \<open>-$liq\<close>)) \<medium_right_bracket>.
     \<medium_left_bracket> getAmount0Delta'($rA, $rB, $liq) \<medium_right_bracket>.
-  \<medium_right_bracket> using \<phi> apply auto
-    apply (smt (z3) frac_le minus_divide_left)
-    by (simp add: frac_le) .
+  \<medium_right_bracket>. .
 
 proc getAmount1Delta':
   \<comment> \<open>In this version we don't consider precision at all, so there is no rounding.
@@ -51,8 +47,7 @@ proc getAmount1Delta':
     if \<open>$rA > $rB\<close> \<medium_left_bracket> $rB $rA \<rightarrow> rA, rB \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;; 
 
     \<open>$liq * ($rB - $rA)\<close>
-  \<medium_right_bracket> using \<phi> apply auto
-    by (simp add: abs_mult) .
+  \<medium_right_bracket>. .
 
 proc getAmount1Delta:
   input \<open>rA \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> rB \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> liq \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
@@ -62,8 +57,7 @@ proc getAmount1Delta:
   \<medium_left_bracket> if \<open>$liq < 0\<close>
     \<medium_left_bracket> neg (getAmount1Delta' ($rA, $rB, \<open>-$liq\<close>)) \<medium_right_bracket>.
     \<medium_left_bracket> getAmount1Delta' ($rA, $rB, $liq) \<medium_right_bracket>.
-  \<medium_right_bracket> using \<phi> apply auto
-    by (smt (verit, ccfv_threshold) zero_less_mult_iff) .
+  \<medium_right_bracket>. .
 
 
 
@@ -92,13 +86,7 @@ proc getAmount0Delta'_rounded:
     \<medium_right_bracket>. \<medium_left_bracket>
       \<open>$numerator1 * $numerator2 / $rB / $rA\<close> (* is \<open>real liq * \<bar>rB - rA\<bar> / rB / rA\<close> *) floor
     \<medium_right_bracket>.
-  \<medium_right_bracket> using \<phi> apply auto
-      apply (smt (verit, del_insts) divide_nonneg_pos mult_nonneg_nonneg mult_pos_pos of_nat_0_le_iff)
-    apply (smt (verit, ccfv_SIG) diff_frac_eq divide_nonneg_nonneg mult.commute mult_nonneg_nonneg of_nat_0_le_iff right_diff_distrib)
-    apply (smt (verit, best) diff_frac_eq divide_nonneg_pos mult.commute of_nat_0_le_iff right_diff_distrib' zero_less_mult_iff)
-    apply (smt (verit, ccfv_threshold) divide_nonneg_nonneg mult_nonneg_nonneg of_nat_0_le_iff)
-    apply (smt (verit, best) diff_frac_eq divide_nonneg_nonneg mult.commute mult_nonneg_nonneg of_nat_0_le_iff right_diff_distrib')
-    by (smt (verit, ccfv_threshold) diff_frac_eq divide_nonneg_pos mult.commute of_nat_0_le_iff right_diff_distrib zero_less_mult_iff) .
+  \<medium_right_bracket>. .
 
 proc getAmount0Delta_rounded:
   input \<open>rA \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> rB \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> liq \<Ztypecolon> \<v>\<a>\<l> \<int>\<close>
@@ -109,9 +97,7 @@ proc getAmount0Delta_rounded:
   \<medium_left_bracket> if \<open>$liq < 0\<close>
     \<medium_left_bracket> $rA $rB \<open>-$liq\<close> \<open>False\<close> getAmount0Delta'_rounded \<medium_right_bracket>.
     \<medium_left_bracket> $rA $rB $liq \<open>True\<close> getAmount0Delta'_rounded \<medium_right_bracket>.
-  \<medium_right_bracket> using \<phi> apply auto
-    apply (smt (verit, ccfv_SIG) divide_minus_left frac_less2 of_int_less_0_iff)
-    by (metis abs_of_nonneg diff_less_0_iff_less div_0 frac_less2 linorder_not_less not_less_iff_gr_or_eq of_int_0 of_int_pos) .
+  \<medium_right_bracket>. .
 
 
 
@@ -129,7 +115,6 @@ proc getNextSqrtPriceFromAmount0:
         \<open>$numerator1 + $product\<close> \<rightarrow> val denominator ;;
         if \<open>$denominator \<ge> $numerator1\<close> \<medium_left_bracket>
           return (\<open>$numerator1 * $sp / $denominator\<close>)
-            affirm using \<phi> by (simp add: add_frac_num) ;; (*TODO: add simplification before \<medium_right_bracket>. so this ;; can be removed*)
         \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>.
       \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
       return ($numerator1 div (\<open>$numerator1 / $sp\<close> add ($amount)))
@@ -138,7 +123,6 @@ proc getNextSqrtPriceFromAmount0:
       require (\<open>$product / $amount = $sp\<close>) ;;
       \<open>$numerator1 - $product\<close> \<rightarrow> val denominator ;;
       return (\<open>$numerator1 * $sp / $denominator\<close>)
-      affirm using \<phi> by (simp add: add_divide_eq_if_simps(5))
     \<medium_right_bracket>. ;;
   \<medium_right_bracket>. .
 
@@ -200,7 +184,7 @@ proc getNextSqrtPriceFromAmount0_int:
   output \<open> (if add then liq / (liq / sp + amount) else liq / (liq / sp - amount)) \<Ztypecolon> \<v>\<a>\<l> \<real> \<close>
   is [routine]
   \<medium_left_bracket>
-    if \<open>$amount = 0\<close> \<medium_left_bracket> return ($sp) \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;; (*Note, we have \<open>0 < amount\<close> in thm \<phi> now*)
+    if \<open>$amount = 0\<close> \<medium_left_bracket> return ($sp) \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
     $liq to_real \<rightarrow> val numerator1 ;;
     if \<open>$add\<close> \<medium_left_bracket>
       \<open>real $amount * $sp\<close> \<rightarrow> val product ;;
@@ -208,7 +192,6 @@ proc getNextSqrtPriceFromAmount0_int:
         \<open>$numerator1 + $product\<close> \<rightarrow> val denominator ;;
         if \<open>$denominator \<ge> $numerator1\<close> \<medium_left_bracket>
           return (\<open>$numerator1 * $sp / $denominator\<close>)
-            affirm using \<phi> by (simp add: add_frac_num) ;; (*TODO: add simplification before \<medium_right_bracket>. so this ;; can be removed*)
         \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>.
       \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
       return ($numerator1 div (\<open>$numerator1 / $sp\<close> add ($amount to_real)))
@@ -217,7 +200,6 @@ proc getNextSqrtPriceFromAmount0_int:
       require (\<open>$product / real $amount = $sp\<close>) ;;
       \<open>$numerator1 - $product\<close> \<rightarrow> val denominator ;;
       return (\<open>$numerator1 * $sp / $denominator\<close>)
-      affirm using \<phi> by (simp add: add_divide_eq_if_simps(5))
     \<medium_right_bracket>. ;;
   \<medium_right_bracket>. .
 

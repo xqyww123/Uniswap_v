@@ -2,6 +2,8 @@ theory Uniswap_SwapMath
   imports Uniswap_SqrtPriceMath Uniswap_Tick_Math Uniswap_Tick
 begin
 
+declare [[\<phi>trace_processing]]
+
 definition reserve_change_in_a_step :: \<open>real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<times> real\<close>
   where \<open>reserve_change_in_a_step L price0 price1
     = (L / price0 - L / price1 \<comment> \<open>reserve change in token0\<close>,
@@ -809,8 +811,6 @@ lemma swap_step_next_price_Gt_MAX:
 \<Longrightarrow> next_price < MAX_PRICE\<close>
   using swap_step_next_price_Gt .
 
-
-
 lemma swap_step_next_price_Le_0:
   \<open>0 < price \<and> 0 < price_target \<and> 0 \<le> L \<and> 0 < feePips \<and> feePips < 1
 \<Longrightarrow> (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips
@@ -924,6 +924,8 @@ proc computeSwapStep:
           (next_price, amountIn, amountOut, feeAmout) = swap_step price price_target L amount_remain feePips\<close>
   is [routine]
   \<medium_left_bracket>
+    note max_def[\<phi>sledgehammer_simps] min_def[\<phi>sledgehammer_simps] ;;
+
     var next_price, feeAmount ;;
     \<open>0 \<Ztypecolon> \<real>\<close> \<open>0 \<Ztypecolon> \<real>\<close> \<rightarrow> var amountIn, amountOut (*TODO: support converge-of-branch between initialized and uninitialized variables*)
     \<open>$price \<ge> $price_target\<close> \<rightarrow> val zeroForOne ;;
@@ -949,89 +951,57 @@ proc computeSwapStep:
       if \<open>$amountRemainingLessFee \<ge> $amountIn\<close> \<medium_left_bracket>
           $price_target \<rightarrow> next_price
       \<medium_right_bracket>. \<medium_left_bracket>
-          getNextSqrtPriceFromInput ($price, $L, $amountRemainingLessFee, $zeroForOne)
-          affirm using \<phi> by auto (smt (verit, best) divide_cancel_left mult_cancel_left2 zero_le_mult_iff) ;; \<rightarrow> next_price
-      \<medium_right_bracket>. is \<open>next_price\<close> 
-          affirm using \<phi> by (auto simp add: \<Delta>amount_def max_amount_def amount_remain'_def next_price_def)
+          getNextSqrtPriceFromInput ($price, $L, $amountRemainingLessFee, $zeroForOne) \<rightarrow> next_price
+      \<medium_right_bracket>. is \<open>next_price\<close>  
     \<medium_right_bracket>. \<medium_left_bracket>
       if \<open>$zeroForOne\<close> \<medium_left_bracket> getAmount1Delta ($price_target, $price, $L) \<medium_right_bracket>.
                        \<medium_left_bracket> getAmount0Delta ($price, $price_target, $L) \<medium_right_bracket>. \<rightarrow> amountOut ;;
       if \<open>-$amount_remain \<ge> $amountOut\<close> \<medium_left_bracket>
           $price_target \<rightarrow> next_price
       \<medium_right_bracket>. \<medium_left_bracket>
-          getNextSqrtPriceFromOutput ($price, $L, neg ($amount_remain), $zeroForOne) ;;
-            affirm using \<phi> by (auto simp add: not_le) (smt (verit, best) divide_cancel_left left_diff_distrib) ;;
-            affirm using \<phi> by (auto simp add: not_le)  (smt (verit, best) \<open>0 < price \<and> 0 < L\<close> mult.commute pos_less_minus_divide_eq)
-          ;; \<rightarrow> next_price
+          getNextSqrtPriceFromOutput ($price, $L, neg ($amount_remain), $zeroForOne) \<rightarrow> next_price
       \<medium_right_bracket>. is \<open>next_price\<close>
-          affirm using \<phi> apply (auto simp add: not_le \<Delta>amount_def max_amount_def amount_remain'_def next_price_def)
-                          apply (smt (verit, best) mult_minus_right nonzero_mult_div_cancel_left)
-                          apply (smt (verit, best) mult_minus_right)
-                          apply (smt (verit, best) frac_le)
-                          by (metis max.absorb3 minus_diff_eq minus_less_iff mult_minus_right)
-    \<medium_right_bracket>. ;;
+    \<medium_right_bracket>.
 
-    \<open>$price_target = $next_price\<close> \<rightarrow> val max ;;
+    \<open>$price_target = $next_price\<close> \<rightarrow> val max
 
-    text \<open>Now we claim two intermediate lemmas that will help the later construction.\<close>
-
-    have t1[simp]: \<open>$zeroForOne \<Longrightarrow> price_target \<le> next_price \<and> next_price \<le> price\<close>
-      unfolding \<Delta>amount_def max_amount_def amount_remain'_def next_price_def
-      using \<phi> apply (auto simp add: min_def max_def not_le)
-      apply (smt (verit) divide_pos_pos mult.commute mult_nonneg_nonneg pos_le_divide_eq)
-      apply (metis diff_ge_0_iff_ge diff_self divide_divide_eq_right linorder_not_less mult_pos_neg mult_zero_left mult_zero_right nat_arith.rule0 nonzero_mult_div_cancel_left order_antisym order_trans)
-      apply (smt (verit, del_insts) divide_pos_pos mult.commute pos_le_divide_eq split_mult_pos_le)
-      apply (smt (verit, ccfv_threshold) divide_pos_pos mult.commute mult_nonneg_nonneg pos_divide_le_eq)
-      apply (smt (verit, ccfv_SIG) mult.commute pos_le_divide_eq)
-      apply (simp add: divide_nonpos_pos)
-      apply (smt (verit, ccfv_SIG) divide_le_cancel nonzero_mult_div_cancel_left)
-      by (simp add: divide_nonpos_pos)
-
-    have t2[simp]: \<open>\<not> $zeroForOne \<Longrightarrow> price \<le> next_price \<and> next_price \<le> price_target\<close>
-      unfolding \<Delta>amount_def max_amount_def amount_remain'_def next_price_def
-      using \<phi> apply (auto simp add: min_def max_def not_le)
-      apply (smt (verit, ccfv_SIG) frac_less2)
-      apply (smt (verit, del_insts) divide_divide_eq_right divide_pos_pos frac_le linorder_not_less nonzero_mult_div_cancel_left)
-      apply (smt (verit, del_insts) divide_pos_pos mult.commute pos_divide_le_eq)
-      using divide_right_mono apply fastforce
-      apply (smt (verit, best) mult_less_0_iff)
-      by (smt (verit, best) mult_less_0_iff) ;;
+    text \<open>Now we claim two intermediate lemmas that will help the later construction.\<close> ;;
+      
+      pure-fact t1[simp]: \<open>$zeroForOne \<Longrightarrow> price_target \<le> next_price \<and> next_price \<le> price\<close>
+            and t2[simp]: \<open>\<not> $zeroForOne \<Longrightarrow> price \<le> next_price \<and> next_price \<le> price_target\<close> ;;
 
     if \<open>$zeroForOne\<close>
        \<medium_left_bracket>
       if \<open>$max \<and> $exactIn\<close> \<medium_left_bracket> $amountIn \<medium_right_bracket>. \<medium_left_bracket>
-        getAmount0Delta ($next_price, $price, $L) affirm using \<phi> t1 by (auto; linarith) ;; \<medium_right_bracket>.
-      \<rightarrow> amountIn is amountIn affirm unfolding amountIn_def using \<phi> by auto ;;
-      if \<open>$max \<and> \<not> $exactIn\<close> \<medium_left_bracket> $amountOut \<medium_right_bracket>. \<medium_left_bracket>
-        getAmount1Delta ($next_price, $price, $L) affirm using \<phi> t1 by (auto; linarith) ;; \<medium_right_bracket>.
-      \<rightarrow> amountOut is amountOut affirm unfolding amountOut_def using \<phi> by auto
+        getAmount0Delta ($next_price, $price, $L) \<medium_right_bracket>.
+      \<rightarrow> amountIn is amountIn
+      if \<open>$max \<and> \<not> $exactIn\<close> \<medium_left_bracket> $amountOut \<medium_right_bracket>. \<medium_left_bracket> 
+        getAmount1Delta ($next_price, $price, $L) \<medium_right_bracket>.
+      \<rightarrow> amountOut is amountOut
     \<medium_right_bracket>. \<medium_left_bracket>
       if \<open>$max \<and> $exactIn\<close> \<medium_left_bracket> $amountIn \<medium_right_bracket>. \<medium_left_bracket>
         getAmount1Delta ($price, $next_price, $L) \<medium_right_bracket>.
-      \<rightarrow> amountIn is amountIn affirm unfolding amountIn_def using \<phi> by auto ;;
+      \<rightarrow> amountIn is amountIn
       if \<open>$max \<and> \<not> $exactIn\<close> \<medium_left_bracket> $amountOut \<medium_right_bracket>. \<medium_left_bracket>
         getAmount0Delta ($price, $next_price, $L) \<medium_right_bracket>.
-      \<rightarrow> amountOut is amountOut affirm unfolding amountOut_def using \<phi> by auto
-    \<medium_right_bracket>. ;;
+      \<rightarrow> amountOut is amountOut
+  \<medium_right_bracket>.
   
-  have t3: \<open>\<not> $exactIn \<Longrightarrow> amountOut \<le> - amount_remain\<close>
-    unfolding amountOut_def next_price_def \<Delta>amount_def amount_remain'_def max_amount_def
-    using \<phi> by auto
+  pure-fact t3: \<open>\<not> $exactIn \<Longrightarrow> amountOut \<le> - amount_remain\<close>
+
   text \<open>Therefore, when there is no precision lost, the following branch will never be entered\<close> ;;
 
   if \<open>\<not> $exactIn \<and> $amountOut > - $amount_remain\<close> \<medium_left_bracket>
     \<open>- $amount_remain\<close> \<rightarrow> amountOut
-  \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. is amountOut affirm using t3 by auto ;;
+  \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. is amountOut ;;
 
   if \<open>$exactIn \<and> $next_price \<noteq> $price_target\<close> \<medium_left_bracket>
     \<open>$amount_remain - $amountIn\<close> \<rightarrow> feeAmount is \<open>amountIn * feePips / (1 - feePips)\<close>
-  affirm using \<phi> by (auto simp add: amountIn_def next_price_def \<Delta>amount_def amount_remain'_def max_amount_def min_def;
-                     simp add: right_diff_distrib' right_diff_distrib)
-  \<medium_right_bracket>. \<medium_left_bracket> \<open>$amountIn * $feePips / (1 - $feePips)\<close> \<rightarrow> feeAmount \<medium_right_bracket>. ;;
+      (*This is a problem cannot be automated*)
 
+  \<medium_right_bracket>. \<medium_left_bracket> \<open>$amountIn * $feePips / (1 - $feePips)\<close> \<rightarrow> feeAmount \<medium_right_bracket>.
+ 
   return ($next_price, $amountIn, $amountOut, $feeAmount)
-    affirm using \<phi> by (auto simp add: swap_step_def Let_def amountIn_def next_price_def \<Delta>amount_def
-                                      amount_remain'_def max_amount_def amountOut_def)
-  \<medium_right_bracket>. .
-
+\<medium_right_bracket>. .
+  
 end
