@@ -453,7 +453,7 @@ proc swap:
 
     set_pool_fee_growth_0 ($fee_growth_global)
     is \<open>pool _ _ _ _ (gSum (growth + fee_growth zeroForOne fee_rate' L price price')) _ _\<close>
-    affirm by (auto simp add: prod_eq_iff growth.map_fee0_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>(15)) (metis fee_growth_is_0_when_zeroForOne growth.fee1_def the_\<phi>(1) the_\<phi>(15) the_\<phi>(18)) ;;
+    certified by (auto simp add: prod_eq_iff growth.map_fee0_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>(15)) (metis fee_growth_is_0_when_zeroForOne growth.fee1_def the_\<phi>(1) the_\<phi>(15) the_\<phi>(18)) ;;
 
     if \<open>$protocolFee > 0\<close> \<medium_left_bracket> set_pool_protocal_fee_0 (\<open>fst (pool.protocol_fees _) + $protocolFee\<close>) \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>.
 
@@ -461,14 +461,14 @@ proc swap:
 
     set_pool_fee_growth_1 ($fee_growth_global)
     is \<open>pool price' i' False (L i') (gSum (growth + fee_growth zeroForOne fee_rate' L price price')) fee_protocol protocol_fees\<close>
-      affirm by (auto simp add: prod_eq_iff growth.map_fee1_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>(15)) (metis \<open>0 < price\<close> fee_growth_is_0_when_not_zeroForOne growth.fee0_def the_\<phi>(15) the_\<phi>(18))  ;;
+      certified by (auto simp add: prod_eq_iff growth.map_fee1_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>(15)) (metis \<open>0 < price\<close> fee_growth_is_0_when_not_zeroForOne growth.fee0_def the_\<phi>(15) the_\<phi>(18))  ;;
 
     if \<open>$protocolFee > 0\<close> \<medium_left_bracket> set_pool_protocal_fee_1 (\<open>snd (pool.protocol_fees _) + $protocolFee\<close>) \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
 
   \<medium_right_bracket>.
   is \<open>pool price' i' False (L i') (gSum (growth + fee_growth zeroForOne fee_rate' L price price')) fee_protocol
            (protocol_fees + \<Delta>protocal_fees fee_protocol zeroForOne L price price' fee_rate')\<close> 
-  affirm apply (cases protocol_fees; auto simp add: \<Delta>protocal_fees_def fee_proto_def proto_fee' zero_prod_def)
+  certified apply (cases protocol_fees; auto simp add: \<Delta>protocal_fees_def fee_proto_def proto_fee' zero_prod_def)
     using fee_proto_def proto_fee' proto_fee'_LE0 zero_prod_def apply fastforce
     using fee_proto_def proto_fee' proto_fee'_LE0 zero_prod_def apply fastforce
     using fee_proto_def proto_fee' proto_fee'_LE0 apply force
