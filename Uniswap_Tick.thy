@@ -404,20 +404,6 @@ proc tick_cross:
      (* set_secondsPerLiquidity ($sec_per_liq sub ($i get_secondsPerLiquidity))
         set_tickCumulative ($tick_cumu sub ($i get_tickCumulative))
         set_seconds ($time sub ($i get_seconds))*) ;;
-  pure_fact x1: \<open>i \<le> j \<Longrightarrow> \<forall>k \<in> {MIN_TICK-1..<i}. \<Delta> k = 0\<close>
-        and \<open>i \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK-1..<i} = 0\<close>
-        and x2: \<open>i \<le> j \<Longrightarrow> sum \<Delta> {i..MAX_TICK} = gSum \<Delta>\<close>
-        and x3: \<open>i \<le> j \<Longrightarrow> i' \<le> i \<Longrightarrow> sum \<Delta> {MIN_TICK - 1..<i'} = 0\<close> for i'
-        and \<open>i \<le> j \<Longrightarrow> \<forall>k \<in> {j<..MAX_TICK}. \<Delta> k = 0\<close>
-        and x4: \<open>i \<le> j \<Longrightarrow> j < i' \<Longrightarrow> sum \<Delta> {i'..MAX_TICK} = 0\<close> for i'
-        and \<open>\<not> i \<le> j \<Longrightarrow> \<forall>k \<in> {i..MAX_TICK}. \<Delta> k = 0\<close>
-        and \<open>\<not> i \<le> j \<Longrightarrow> sum \<Delta> {i..MAX_TICK} = 0\<close>
-        and y3: \<open>\<not> i \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK-1..<i} = gSum \<Delta>\<close>
-        and y4: \<open>\<not> i \<le> j \<Longrightarrow> i' \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK - 1..<i'} = 0\<close> for i'
-        and y5: \<open>\<not> i \<le> j \<Longrightarrow> i < i' \<Longrightarrow> sum \<Delta> {i'..MAX_TICK} = 0\<close> for i'
-        and a1: \<open>\<delta> i = Some (a, b) \<Longrightarrow> tick_info.initialized (ticks i)\<close> for a b i
-        and a2: \<open>\<delta> i = Some (a, b) \<Longrightarrow> tick_info.growth (ticks i) = growth_outside growth i (a,b) j\<close> for i a b
-        and t1: \<open>(fee0 - fee0', fee1 - fee1') = (fee0, fee1) - (fee0', fee1')\<close>
 (*
   have th1[simp]:
         \<open>\<And>A. (growth.fee0 A - fee0', growth.fee1 A - fee1') = A - (fee0', fee1')\<close>
@@ -427,9 +413,46 @@ proc tick_cross:
     by (case_tac A; simp)
   note th2 = \<open>Invt_Ticks j Lg liq growth \<delta> ticks\<close>[unfolded Invt_Ticks_def Invt_A_Tick_def]
   note th3 = th2[THEN conjunct1] ;; *)
-  ;;
+
   $i get_liquidityNet
-  \<medium_right_bracket> certified unfolding Invt_Ticks_def Invt_A_Tick_def
+\<medium_right_bracket> certified proof -
+
+ have x1: \<open>i \<le> j \<Longrightarrow> \<forall>k \<in> {MIN_TICK-1..<i}. \<Delta> k = 0\<close>
+    using the_\<phi>(15) by force
+  then have \<open>i \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK-1..<i} = 0\<close>
+    using sum.neutral by blast  
+  then have x2: \<open>i \<le> j \<Longrightarrow> sum \<Delta> {i..MAX_TICK} = gSum \<Delta>\<close>
+    by (metis diff_mono diff_zero linordered_nonzero_semiring_class.zero_le_one sum_sub_1 the_\<phi>lemmata(1) the_\<phi>lemmata(2))
+  have x3: \<open>i \<le> j \<Longrightarrow> i' \<le> i \<Longrightarrow> sum \<Delta> {MIN_TICK - 1..<i'} = 0\<close> for i'
+    by (simp add: x1)
+  have x1': \<open>i \<le> j \<Longrightarrow> \<forall>k \<in> {j<..MAX_TICK}. \<Delta> k = 0\<close>
+    using the_\<phi>(15) by force
+  have x4: \<open>i \<le> j \<Longrightarrow> j < i' \<Longrightarrow> sum \<Delta> {i'..MAX_TICK} = 0\<close> for i'
+    by (simp add: the_\<phi>(15))
+
+  have y1: \<open>\<not> i \<le> j \<Longrightarrow> \<forall>k \<in> {i..MAX_TICK}. \<Delta> k = 0\<close>
+    by (meson atLeastAtMost_iff the_\<phi>(15))
+  then have y2: \<open>\<not> i \<le> j \<Longrightarrow> sum \<Delta> {i..MAX_TICK} = 0\<close>
+    using sum.neutral by blast  
+  then have y3: \<open>\<not> i \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK-1..<i} = gSum \<Delta>\<close>
+    by (smt (verit, ccfv_threshold) diff_zero sum_sub_2 the_\<phi>lemmata(1) the_\<phi>lemmata(2))
+  have y4: \<open>\<not> i \<le> j \<Longrightarrow> i' \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK - 1..<i'} = 0\<close> for i'
+    using the_\<phi>(15) by auto
+  have y5: \<open>\<not> i \<le> j \<Longrightarrow> i < i' \<Longrightarrow> sum \<Delta> {i'..MAX_TICK} = 0\<close> for i'
+    using the_\<phi>(15) by auto
+
+  have a1: \<open>\<delta> i = Some (a, b) \<Longrightarrow> tick_info.initialized (ticks i)\<close> for a b i
+    using the_\<phi>lemmata(3) by blast
+  have a2: \<open>\<delta> i = Some (a, b) \<Longrightarrow> tick_info.growth (ticks i) = growth_outside growth i (a,b) j\<close> for i a b
+    using the_\<phi>lemmata(3) by force
+
+  have t1[simp]:
+      \<open>(fee0 - fee0', fee1 - fee1') = (fee0, fee1) - (fee0', fee1')\<close>
+    by simp
+
+  note diff_Pair[simp del] uminus_Pair[simp del]
+
+  show ?thesis
     apply (auto simp add: \<phi> plus_fun)
     apply (metis Tick_i the_\<phi>(10) tick_info.sel(2))
     apply (metis Tick_i the_\<phi>(10) tick_info.sel(3))
@@ -460,7 +483,7 @@ proc tick_cross:
     using the_\<phi>lemmata(1) apply force
     apply (simp add: add_order_0_class.add_nonneg_nonneg the_\<phi>(14) the_\<phi>lemmata(10))
     by (metis Tick_i the_\<phi>(10) tick_info.sel(3))
-  .
+qed .
 
 end
 
