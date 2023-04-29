@@ -1,6 +1,13 @@
 {"kind": "chapter",
  "items":
-   [{"name": "Phi_Semantics", "description": ""},
+   [{"name": "Debt_Axiom", "description": ""},
+    {"name": "Debt_Axiom_Doc", "description": ""},
+    {"name": "Phi_Document", "description": ""},
+    {"name": "Phi_Logic_Programming_Reasoner", "description": ""},
+    {"name": "Phi_Semantics", "description": ""},
     {"name": "Phi_Semantics_Framework", "description": ""},
+    {"name": "Phi_Statespace", "description": ""},
     {"name": "Phi_System", "description": ""},
-    {"name": "Uniswap_v", "description": ""}]}
+    {"name": "Phi_Test", "description": ""},
+    {"name": "Uniswap_v", "description": ""},
+    {"name": "Virtual_Datatype", "description": ""}]}

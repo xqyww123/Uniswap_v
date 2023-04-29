@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><link rel="stylesheet" type="text/css" href="isabelle.css"/>
+<title>File ‹library/system/application.ML›</title>
+</head>
+
+
+<body>
+<div class="head">
+<h1>File ‹library/system/application.ML›</h1>
+</div>
+
+<pre class="source"><span class="comment1"><span>(* FILE: library/system/application.ML
+   AUTHOR: Qiyuan Xu
+
+   The module contains reasoning infrastructure for applying application rules.
+   An application rule can be a specification theorem for a procedure, a rule of view shift
+   or transformation of abstraction, or any arbitrary things whose application methods are
+   registered to the φ-LPR reasoner.
+
+   I changed the semantics of application recently: the application now returns
+   once the first successful application is found, instead of traversing all possible
+   applications and checking there is only one feasible application.
+*)</span></span><span>
+
+</span><span class="keyword1"><span class="keyword"><span>signature</span></span></span><span> </span><span class="entity"><span>PHI_APPLICATION</span></span><span> </span><span class="main"><span>=</span></span><span> </span><span class="keyword2"><span class="keyword"><span>sig</span></span></span><span>
+
+  </span><span class="keyword1"><span class="keyword"><span>val</span></span></span><span> apply_proc_naive </span><span class="main"><span>:</span></span><span> </span><span>thm</span><span> </span><span class="comment1"><span>(*proc*)</span></span><span> </span><span class="main"><span>-&gt;</span></span><span> </span><span class="entity"><span>context_state</span></span><span> </span><span class="main"><span>-&gt;</span></span><span> </span><span class="entity"><span>context_state</span></span><span>
+
+</span><span class="comment1"><span>(*Depending on application rules, most of the resulted sequent (except resolution) has
+an additional obligation antecedent at the last of the antecedent list,
+storing proof obligations generated during ToSA, no matter whether the obligations are trivial.*)</span></span><span>
+  </span><span class="keyword1"><span class="keyword"><span>val</span></span></span><span> try_apply </span><span class="main"><span>:</span></span><span> </span><span>thm</span><span> </span><span>list</span><span> </span><span class="comment1"><span>(*applied rules*)</span></span><span> </span><span class="main"><span>-&gt;</span></span><span> </span><span class="entity"><span>context_state</span></span><span> </span><span class="comment1"><span>(*sequent*)</span></span><span> </span><span class="main"><span>-&gt;</span></span><span> </span><span class="entity"><span>context_state</span></span><span> </span><span>option</span><span>
+  </span><span class="keyword1"><span class="keyword"><span>val</span></span></span><span> apply </span><span class="main"><span>:</span></span><span> </span><span>thm</span><span> </span><span>list</span><span> </span><span class="comment1"><span>(*rules to be applied*)</span></span><span> </span><span class="main"><span>-&gt;</span></span><span> </span><span class="entity"><span>context_state</span></span><span> </span><span class="comment1"><span>(*sequent*)</span></span><span> </span><span class="main"><span>-&gt;</span></span><span> </span><span class="entity"><span>context_state</span></span><span>
+
+</span><span class="comment1"><span>(*
+  (*Advanced Modus Pones using logic programming about antecedent <span class="hidden">\&lt;^</span><span class="control">term</span><span class="hidden">&gt;</span>‹φApplication_Conv›
+    where the inferences relate to various conversions of applied rules.
+   *)
+  val MPs : Proof.context -&gt; thm list -&gt; thm -&gt; thm
+  val MP  : Proof.context -&gt; thm -&gt; thm -&gt; thm *)</span></span><span>
+
+</span><span class="keyword2"><span class="keyword"><span>end</span></span></span><span>
+
+</span><span class="keyword1"><span class="keyword"><span>structure</span></span></span><span> </span><span class="entity"><span>Phi_Apply</span></span><span> </span><span class="main"><span>:</span></span><span> </span><span class="entity"><span>PHI_APPLICATION</span></span><span> </span><span class="main"><span>=</span></span><span> </span><span class="keyword2"><span class="keyword"><span>struct</span></span></span><span>
+</span><span class="keyword3"><span class="keyword"><span>open</span></span></span><span> </span><span>Phi_Help</span><span>
+
+</span><span class="keyword1"><span class="keyword"><span>val</span></span></span><span> </span><span class="entity"><span>expand_appliant</span></span><span> </span><span class="main"><span>=</span></span><span>
+  </span><span class="entity"><span>repeat</span></span><span> </span><span class="main"><span>(</span></span><span class="keyword1"><span class="keyword"><span>fn</span></span></span><span> </span><span class="entity"><span>th</span></span><span> </span><span class="main"><span>=&gt;</span></span><span> </span><span class="entity"><span>th</span></span><span> </span><span>RS</span><span> </span><span class="antiquoted"><span class="entity"><span class="antiquote"><span>@{</span></span><span class="operator"><span>thm</span></span><span> </span><a class="entity_ref" href="../../../../../../../../HOL/HOL/HOL.html#HOL.spec|fact"><span>spec</span></a><span class="antiquote"><span>}</span></span></span></span><span class="main"><span>)</span></span><span> </span><span>#&gt;</span><span>
+  </span><span class="entity"><span>repeat</span></span><span> </span><span class="main"><span>(</span></span><span class="keyword1"><span class="keyword"><span>fn</span></span></span><span> </span><span class="entity"><span>th</span></span><span> </span><span class="main"><span>=&gt;</span></span><span> </span><span class="entity"><span>th</span></span><span> </span><span>RS</span><span> </span><span class="antiquoted"><span class="entity"><span class="antiquote"><span>@{</span></span><span class="operator"><span>thm</span></span><span> </span><a class="entity_ref" href="../../../../../../../../HOL/HOL/HOL.html#HOL.mp|fact"><span>mp</span></a><span class="antiquote"><span>}</span></span></span></span><span class="main"><span>)</span></span><span> </span><span>#&gt;</span><span>
+  </span><span class="entity"><span>repeat</span></span><span> </span><span class="main"><span>(</span></span><span class="keyword1"><span class="keyword"><span>fn</span></span></span><span> </span><span class="entity"><span>th</span></span><span> </span><span class="main"><span>=&gt;</span></span><span> </span><span class="entity"><span>th</span></span><span> </span><span>RS</span><span> </span><span class="antiquoted"><span class="entity"><span class="antiquote"><span>@{</span></span><span class="operator"><span>thm</span></span><span> </span><a class="entity_ref" href="../../../../../../../../HOL/HOL/HOL.html#HOL.spec|fact"><span>spec</span></a><span class="antiquote"><span>}</span></span></span></span><span class="main"><span>)</span></span><span>
+
+</span><span class="keyword1"><span class="keyword"><span>fun</span></span></span><span> </span><span class="entity"><span>apply_proc_naive</span></span><span> </span><span class="entity"><span>proc</span></span><span> </span><span class="main"><span>(</span></span><span class="entity"><span>ctxt</span></span><span class="main"><span>,</span></span><span class="entity"><span>sequent</span></span><span class="main"><span>)</span></span><span> </span><span class="main"><span>=</span></span><span>
+  </span><span class="main"><span>(</span></span><span class="entity"><span>ctxt</span></span><span class="main"><span>,</span></span><span> </span><span class="entity"><span>expand_appliant</span></span><span> </span><span class="entity"><span>proc</span></span><span> </span><span>RS</span><span> </span><span class="main"><span>(</span></span><span class="entity"><span>sequent</span></span><span> </span><span>RS</span><span> </span><span class="antiquoted"><span class="entity"><span class="antiquote"><span>@{</span></span><span class="operator"><span>thm</span></span><span> </span><a class="entity_ref" href="../../../../../../Calculus_of_Programming.html#Calculus_of_Programming.\&lt;phi&gt;apply_proc|fact"><span>φapply_proc</span></a><span class="antiquote"><span>}</span></span></span></span><span class="main"><span>)</span></span><span class="main"><span>)</span></span><span>
+
+</span><span class="keyword1"><span class="keyword"><span>fun</span></span></span><span> </span><span class="entity"><span>mk_app_reasoning_normal</span></span><span> </span><span class="entity"><span>app</span></span><span> </span><span class="entity"><span>sequent</span></span><span> </span><span class="main"><span>=</span></span><span>
+  </span><span class="keyword2"><span class="keyword"><span>let</span></span></span><span> </span><span class="keyword1"><span class="keyword"><span>val</span></span></span><span> </span><span class="entity"><span>idx</span></span><span> </span><span class="main"><span>=</span></span><span> </span><span>Thm.maxidx_of</span><span> </span><span class="entity"><span>sequent</span></span><span> </span><span>+</span><span> </span><span class="inner_numeral"><span>1</span></span><span>
+     </span><span> </span><span class="keyword1"><span class="keyword"><span>val</span></span></span><span> </span><span class="entity"><span>app</span></span><span> </span><span class="main"><span>=</span></span><span> </span><span>Thm.incr_indexes</span><span> </span><span class="entity"><span>idx</span></span><span> </span><span class="entity"><span>app</span></span><span>
+     </span><span> </span><span class="keyword1"><span class="keyword"><span>val</span></span></span><span> </span><span class="entity"><span>idx</span></span><span> </span><span class="main"><span>=</span></span><span> </span><span>Thm.maxidx_of</span><span> </span><span class="entity"><span>app</span></span><span> </span><span>+</span><span> </span><span class="inner_numeral"><span>1</span></span><span>
+     </span><span> </span><span class="keyword1"><span class="keyword"><span>val</span></span></span><span> </span><span class="entity"><span>rule</span></span><span> </span><span class="main"><span>=</span></span><span> </span><span class="antiquoted"><span class="entity"><span class="antiquote"><span>@{</span></span><span class="operator"><span>thm</span></span><span> </span><a class="entity_ref" href="../../../../../../IDE_CP_Core.html#IDE_CP_Core.\&lt;phi&gt;application|fact"><span>φapplication</span></a><span class="antiquote"><span>}</span></span></span></span><span>
+              </span><span>|&gt;</span><span> </span><span>Thm.incr_indexes</span><span> </span><span class="entity"><span>idx</span></span><span>
+              </span><span>|&gt;</span><span> </span><span>Thm.instantiate</span><span> </span><span class="main"><span>(</span></span><span>TVars.empty</span><span class="main"><span>,</span></span><span>
+                                  </span><span>Vars.make</span><span> </span><span class="main"><span>[</span></span><span class="main"><span>(</span></span><span class="main"><span>(</span></span><span class="main"><span>(</span></span><span class="inner_quoted"><span>"Apps"</span></span><span class="main"><span>,</span></span><span class="entity"><span>idx</span></span><span class="main"><span>)</span></span><span class="main"><span>,</span></span><span>propT</span><span class="main"><span>)</span></span><span class="main"><span>,</span></span><span>  </span><span>Thm.cprop_of</span><span> </span><span class="entity"><span>app</span></span><span class="main"><span>)</span></span><span class="main"><span>,</span></span><span>
+                                             </span><span class="main"><span>(</span></span><span class="main"><span>(</span></span><span class="main"><span>(</span></span><span class="inner_quoted"><span>"State"</span></span><span class="main"><span>,</span></span><span class="entity"><span>idx</span></span><span class="main"><span>)</span></span><span class="main"><span>,</span></span><span>propT</span><span class="main"><span>)</span></span><span class="main"><span>,</span></span><span> </span><span>Thm.cprop_of</span><span> </span><span class="entity"><span>sequent</span></span><span class="main"><span>)</span></span><span class="main"><span>]</span></span><span class="main"><span>)</span></span><span>
+  </span><span class="keyword2"><span class="keyword"><span>in</span></span></span><span> </span><span>Thm.implies_elim</span><span> </span><span class="main"><span>(</span></span><span>Thm.implies_elim</span><span> </span><span class="entity"><span>rule</span></span><span> </span><span class="entity"><span>app</span></span><span class="main"><span>)</span></span><span> </span><span class="entity"><span>sequent</span></span><span>
+  </span><span class="keyword2"><span class="keyword"><span>end</span></span></span><span>
+
+</span><span class="keyword1"><span class="keyword"><span>fun</span></span></span><span> </span><span class="entity"><span>prep_sequent</span></span><span> </span><span class="entity"><span>sequent</span></span><span> </span><span class="main"><span>=</span></span><span> </span><span class="entity"><span>prep_sequent</span></span><span> </span><span class="main"><span>(</span></span><span class="antiquoted"><span class="entity"><span class="antiquote"><span>@{</span></span><span class="operator"><span>thm</span></span><span> </span><a class="entity_ref" href="../../../../../../../../HOL/HOL/HOL.html#HOL.allI|fact"><span>allI</span></a><span class="antiquote"><span>}</span></span></span></span><span> </span><span>RS</span><span> </span><span class="entity"><span>sequent</span></span><span class="main"><span>)</span></span><span>
+                           </span><span class="keyword3"><span class="keyword"><span>handle</span></span></span><span> </span><span>THM</span><span> </span><span class="main"><span>_</span></span><span> </span><span class="main"><span>=&gt;</span></span><span> </span><span class="entity"><span>sequent</span></span><span>
+
+</span><span class="keyword1"><span class="keyword"><span>fun</span></span></span><span> </span><span class="entity"><span>mk_app_reasoning_RS</span></span><span> </span><span class="entity"><span>app</span></span><span> </span><span class="entity"><span>sequent</span></span><span> </span><span class="main"><span>=</span></span><span>
+  </span><span class="main"><span>(</span></span><span class="entity"><span>app</span></span><span> </span><span>RS</span><span> </span><span class="antiquoted"><span class="entity"><span class="antiquote"><span>@{</span></span><span class="operator"><span>thm</span></span><span> </span><a class="entity_ref" href="../../../../../../IDE_CP_Core.html#IDE_CP_Core.\&lt;phi&gt;Application_Conv|fact"><span>φApplication_Conv</span></a><span class="antiquote"><span>}</span></span></span></span><span class="main"><span>)</span></span><span>
+    </span><span>|&gt;</span><span> </span><span>Thm.permute_prems</span><span> </span><span class="inner_numeral"><span>0</span></span><span> </span><span class="main"><span>(</span></span><span>Thm.nprems_of</span><span> </span><span class="entity"><span>app</span></span><span class="main"><span>)</span></span><span>
+    </span><span>|&gt;</span><span> </span><span class="main"><span>(</span></span><span class="keyword1"><span class="keyword"><span>fn</span></span></span><span> </span><span class="entity"><span>th</span></span><span> </span><span class="main"><span>=&gt;</span></span><span> </span><span class="entity"><span>th</span></span><span> </span><span>RS</span><span> </span><span class="entity"><span>prep_sequent</span></span><span> </span><span class="entity"><span>sequent</span></span><span class="main"><span>)</span></span><span>
+
+</span><span class="keyword1"><span class="keyword"><span>fun</span></span></span><span> </span><span class="entity"><span>mk_app_reasoning</span></span><span> </span><span class="entity"><span>sequent</span></span><span> </span><span class="entity"><span>app</span></span><span> </span><span class="main"><span>=</span></span><span>
+  </span><span class="keyword2"><span class="keyword"><span>case</span></span></span><span> </span><span>Thm.prop_of</span><span> </span><span class="entity"><span>sequent</span></span><span>
+    </span><span class="keyword2"><span class="keyword"><span>of</span></span></span><span> </span><span>Const</span><span class="main"><span>(</span></span><span class="antiquoted"><span class="operator"><span><span class="hidden">\&lt;^</span><span class="control">const_name</span><span class="hidden">&gt;</span></span></span><span>‹</span><span>Pure.imp</span><span>›</span></span><span class="main"><span>,</span></span><span> </span><span class="main"><span>_</span></span><span class="main"><span>)</span></span><span> </span><span>$</span><span> </span><span class="main"><span>_</span></span><span> </span><span>$</span><span> </span><span class="main"><span>_</span></span><span> </span><span class="main"><span>=&gt;</span></span><span>
+            </span><span class="entity"><span>mk_app_reasoning_RS</span></span><span> </span><span class="entity"><span>app</span></span><span> </span><span class="entity"><span>sequent</span></span><span>
+     </span><span class="main"><span>|</span></span><span> </span><span class="main"><span>_</span></span><span> </span><span class="main"><span>=&gt;</span></span><span> </span><span class="entity"><span>mk_app_reasoning_normal</span></span><span> </span><span class="entity"><span>app</span></span><span> </span><span class="entity"><span>sequent</span></span><span>
+
+</span><span class="keyword1"><span class="keyword"><span>fun</span></span></span><span> </span><span class="entity"><span>try_apply</span></span><span> </span><span class="main"><span>[</span></span><span class="main"><span>]</span></span><span> </span><span class="main"><span>_</span></span><span> </span><span class="main"><span>=</span></span><span> </span><span>NONE</span><span>
+  </span><span class="main"><span>|</span></span><span> </span><span class="entity"><span>try_apply</span></span><span> </span><span class="entity"><span>apps</span></span><span> </span><span class="main"><span>(</span></span><span class="entity"><span>ctxt</span></span><span class="main"><span>,</span></span><span class="entity"><span>sequent</span></span><span class="main"><span>)</span></span><span> </span><span class="main"><span>=</span></span><span> </span><span class="main"><span>(</span></span><span>
+     </span><span> </span><span class="entity"><span>Phi_Reasoner.info_print</span></span><span> </span><span class="entity"><span>ctxt</span></span><span> </span><span class="inner_numeral"><span>2</span></span><span> </span><span class="main"><span>(</span></span><span class="keyword1"><span class="keyword"><span>fn</span></span></span><span> </span><span class="main"><span>_</span></span><span> </span><span class="main"><span>=&gt;</span></span><span>
+            </span><span class="inner_quoted"><span>"Reasoning generic applications..."</span></span><span> </span><span>^</span><span> </span><span>Position.here</span><span> </span><span class="antiquoted"><span class="operator"><span class="entity"><span>⌂</span></span></span></span><span class="main"><span>)</span></span><span class="main"><span>;</span></span><span>
+     </span><span> </span><span class="entity"><span>PLPR_Optimum_Solution.best_among</span></span><span> </span><span class="main"><span>(</span></span><span class="entity"><span>ctxt</span></span><span class="main"><span>,</span></span><span> </span><span>map</span><span> </span><span class="main"><span>(</span></span><span class="entity"><span>mk_app_reasoning</span></span><span> </span><span class="entity"><span>sequent</span></span><span class="main"><span>)</span></span><span> </span><span class="entity"><span>apps</span></span><span class="main"><span>)</span></span><span class="main"><span>)</span></span><span>
+
+</span><span class="keyword1"><span class="keyword"><span>fun</span></span></span><span> </span><span class="entity"><span>apply</span></span><span> </span><span class="entity"><span>applications</span></span><span> </span><span class="entity"><span>stat</span></span><span> </span><span class="main"><span>=</span></span><span>
+  </span><span class="keyword2"><span class="keyword"><span>case</span></span></span><span> </span><span class="entity"><span>try_apply</span></span><span> </span><span class="entity"><span>applications</span></span><span> </span><span class="entity"><span>stat</span></span><span>
+    </span><span class="keyword2"><span class="keyword"><span>of</span></span></span><span> </span><span>SOME</span><span> </span><span class="entity"><span>stat'</span></span><span> </span><span class="main"><span>=&gt;</span></span><span> </span><span class="entity"><span>stat'</span></span><span>
+     </span><span class="main"><span>|</span></span><span> </span><span>NONE</span><span> </span><span class="main"><span>=&gt;</span></span><span> </span><span class="keyword3"><span class="keyword"><span>raise</span></span></span><span> </span><span>THM</span><span> </span><span class="main"><span>(</span></span><span class="inner_quoted"><span>"Application Fail"</span></span><span class="main"><span>,</span></span><span> </span><span class="inner_numeral"><span>0</span></span><span class="main"><span>,</span></span><span> </span><span class="main"><span>(</span></span><span>snd</span><span> </span><span class="entity"><span>stat</span></span><span class="main"><span>)</span></span><span>::</span><span class="entity"><span>applications</span></span><span class="main"><span>)</span></span><span>
+
+</span><span class="comment1"><span>(*
+fun comp_no_flatten_matched (th, n) i rule =
+  (case distinct Thm.eq_thm (Seq.list_of
+      (Thm.bicompose NONE {flatten = false, match = true, incremented = true}
+        (false, th, n) i rule)) of
+    [th'] =&gt; Thm.solve_constraints th'
+  | [] =&gt; raise THM ("comp_no_flatten", i, [th, rule])
+  | _ =&gt; raise THM ("comp_no_flatten: unique result expected", i, [th, rule]));
+
+fun MPs ctxt th1s' th2 =
+  let
+    val th1s = map (Drule.incr_indexes th2) th1s'
+    val stats = map (fn th1 =&gt;
+          Thm.instantiate (TVars.empty, Vars.make [
+              ((("P",0), <span class="hidden">\&lt;^</span><span class="control">typ</span><span class="hidden">&gt;</span>‹prop›), Thm.cprop_of th1),
+              ((("Q",0), <span class="hidden">\&lt;^</span><span class="control">typ</span><span class="hidden">&gt;</span>‹prop›), Thm.cprem_of th2 1)
+          ]) @{thm φApplication_Conv}
+     |&gt; (fn th =&gt; comp_no_flatten_matched (Thm.implies_elim th th1, 3) 1 th2)
+     |&gt; pair ctxt |&gt; Seq.single
+     ) th1s
+    val _ = Phi_Reasoner.info_print ctxt 2 (fn _ =&gt; "Reasoning modus pones..." ^ Position.here ⌂)
+    fun obligation_fail S = raise Phi_Reasoners.Attemption_Fail S
+  in
+    case snd (Phi_Reasoner.reason_s ctxt (K ((), stats)))
+      of SOME stat =&gt; Phi_Reasoners.safer_obligation_solver' obligation_fail stat
+       | NONE =&gt; Phi_Reasoner.error "Meta Modus Pones"
+  end
+
+fun MP ctxt th1' th2 = MPs ctxt [th1'] th2 *)</span></span><span>
+
+</span><span class="keyword2"><span class="keyword"><span>end</span></span></span><span>
+
+</span></pre>
+</body>
+
+</html>
