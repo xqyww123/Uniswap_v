@@ -404,7 +404,7 @@ proc tick_cross:
      (* set_secondsPerLiquidity ($sec_per_liq sub ($i get_secondsPerLiquidity))
         set_tickCumulative ($tick_cumu sub ($i get_tickCumulative))
         set_seconds ($time sub ($i get_seconds))*) ;;
-  pure-fact x1: \<open>i \<le> j \<Longrightarrow> \<forall>k \<in> {MIN_TICK-1..<i}. \<Delta> k = 0\<close>
+  pure_fact x1: \<open>i \<le> j \<Longrightarrow> \<forall>k \<in> {MIN_TICK-1..<i}. \<Delta> k = 0\<close>
         and \<open>i \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK-1..<i} = 0\<close>
         and x2: \<open>i \<le> j \<Longrightarrow> sum \<Delta> {i..MAX_TICK} = gSum \<Delta>\<close>
         and x3: \<open>i \<le> j \<Longrightarrow> i' \<le> i \<Longrightarrow> sum \<Delta> {MIN_TICK - 1..<i'} = 0\<close> for i'

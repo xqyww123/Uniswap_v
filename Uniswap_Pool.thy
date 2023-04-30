@@ -273,14 +273,14 @@ proc swap:
  
       let ?growth' = \<open>growth + fee_growth zeroForOne fee_rate' L price pr\<close> ;;
 
-      pure-fact [useful]: \<open>0 < pr\<close>
+      pure_fact [useful]: \<open>0 < pr\<close>
             and tick_next_dom: \<open>MIN_TICK \<le> tick_next\<close> \<open>tick_next \<le> MAX_TICK\<close>
       
       have y0: \<open>if j < tick_next' then next_initialized Lg j tick_next' else next_initialized Lg (tick_next') (j+1)\<close>
         by (auto, metis greaterThanLessThan_iff not_less_iff_gr_or_eq order_less_le_trans the_\<phi>(15) the_\<phi>lemmata(4),
                   metis dual_order.strict_trans1 greaterThanAtMost_iff order_less_le the_\<phi>(15) the_\<phi>lemmata(4)) ;;
 
-      pure-fact \<open>if j < tick_next then next_initialized Lg j tick_next else next_initialized Lg tick_next (j+1)\<close>
+      pure_fact \<open>if j < tick_next then next_initialized Lg j tick_next else next_initialized Lg tick_next (j+1)\<close>
             and x1: \<open>zeroForOne \<Longrightarrow> tick_next \<le> j\<close>
             and \<open>\<not> zeroForOne \<Longrightarrow> j < tick_next\<close>
             and t8: \<open>zeroForOne \<Longrightarrow> \<forall>k. tick_next < k \<and> k \<le> j \<longrightarrow> Lg k = 0\<close>
@@ -309,11 +309,11 @@ proc swap:
       ) \<exists>next_price, amountIn, amountOut, fee_amount
       \<rightarrow> price, val amountIn, amountOut, feeAmount ;;
 
-      pure-fact d2: \<open>fee_amount = amountIn * fee_rate'\<close>
+      pure_fact d2: \<open>fee_amount = amountIn * fee_rate'\<close>
 
       have d1[simp]: \<open>amountIn + fee_amount = amountIn / (1 - fee_rate)\<close> by (smt (verit, ccfv_threshold) ab_semigroup_mult_class.mult_ac(1) add.commute add_diff_cancel_left' cancel_comm_monoid_add_class.diff_cancel comm_semiring_class.distrib d2 diff_add_eq diff_diff_eq2 diff_zero div_by_1 divide_cancel_right divide_divide_eq_left divide_divide_eq_left' divide_divide_eq_right divide_eq_0_iff divide_real_def eq_divide_imp fee_rate_range linorder_not_le minus_diff_eq mult.commute mult.left_commute mult.right_neutral mult_1 mult_cancel_left2 mult_eq_0_iff mult_zero_left mult_zero_right nle_le nonzero_divide_mult_cancel_left nonzero_mult_div_cancel_left order_refl real_divide_square_eq right_diff_distrib' ring_class.ring_distribs(1) times_divide_eq_left fee_rate'_def) ;;
   
-      pure-fact \<open>MIN_PRICE < (if zeroForOne then max $step_price_next price_limit else min $step_price_next price_limit)\<close>
+      pure_fact \<open>MIN_PRICE < (if zeroForOne then max $step_price_next price_limit else min $step_price_next price_limit)\<close>
             and \<open>MIN_PRICE < next_price\<close>
             and \<open>\<not> zeroForOne \<Longrightarrow> next_price < MAX_PRICE\<close>
             and \<open>zeroForOne \<Longrightarrow> next_price \<le> pr\<close> 
@@ -347,7 +347,7 @@ proc swap:
       define step_growth where \<open>step_growth = (if L j = 0 then 0 else fee_amount / L j)\<close>
       define \<Delta>growth where \<open>\<Delta>growth = fee_growth zeroForOne fee_rate' L pr next_price\<close> ;;
 
-      pure-fact \<open>0 < L j \<Longrightarrow> zeroForOne \<Longrightarrow> global_fee0_growth (fee_growth' True fee_rate' L next_price pr) = (1/next_price - 1/pr) * fee_rate'\<close>
+      pure_fact \<open>0 < L j \<Longrightarrow> zeroForOne \<Longrightarrow> global_fee0_growth (fee_growth' True fee_rate' L next_price pr) = (1/next_price - 1/pr) * fee_rate'\<close>
             and \<open>0 < L j \<Longrightarrow> \<not> zeroForOne \<Longrightarrow> global_fee1_growth (fee_growth' False fee_rate' L pr next_price) = (next_price - pr) * fee_rate'\<close> ;;
 
       if \<open>$liquidity > 0\<close> \<medium_left_bracket>
@@ -396,11 +396,11 @@ proc swap:
         )
         is \<open>real_next_tick\<close> \<rightarrow> tick
 
-        pure-fact [simp]: \<open>real_next_tick < MAX_TICK\<close>
+        pure_fact [simp]: \<open>real_next_tick < MAX_TICK\<close>
 
       \<medium_right_bracket> for \<open>_ \<s>\<u>\<b>\<j> real_next_tick < MAX_TICK\<close> ..
       \<medium_left_bracket>
-        pure-fact \<open>  zeroForOne \<Longrightarrow> tick_of_price next_price \<le> j\<close> 
+        pure_fact \<open>  zeroForOne \<Longrightarrow> tick_of_price next_price \<le> j\<close> 
               and \<open>\<not> zeroForOne \<Longrightarrow> j \<le> tick_of_price next_price\<close>
               and \<open>  zeroForOne \<Longrightarrow> tick_next \<le> tick_of_price next_price\<close>
               and \<open>\<not> zeroForOne \<Longrightarrow> tick_of_price next_price < tick_next\<close>
@@ -423,7 +423,7 @@ proc swap:
       \<open>\<v>\<a>\<r>[liquidity]\<close> is \<open>L real2_next_tick\<close> ;;
       \<open>Ticks\<close> is \<open>(Lg, L, ?growth' + \<Delta>growth, real2_next_tick, \<delta>)\<close> ;;
 
-      pure-fact Iv1: \<open>real2_next_tick < MAX_TICK\<close>
+      pure_fact Iv1: \<open>real2_next_tick < MAX_TICK\<close>
             and Iv2: \<open>MIN_PRICE \<le> next_price \<and> next_price < MAX_PRICE\<close>
             and Iv3: \<open>tick_of_price next_price = real2_next_tick \<or> next_price = price_of (real2_next_tick + 1)\<close>
             and Iv4: \<open>if zeroForOne then price_limit \<le> next_price \<and> next_price \<le> price
@@ -445,7 +445,7 @@ proc swap:
   if \<open>$liquidityStart \<noteq> $liquidity\<close> \<medium_left_bracket> set_pool_liquidity ( $liquidity ) \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>.
       is \<open>pool _ _ _ (L i') _ _ _\<close>
 
-  pure-fact proto_fee': \<open>proto_fee' =
+  pure_fact proto_fee': \<open>proto_fee' =
       (if 0 < fee_proto then ((if zeroForOne then fst else snd) (reserve_change zeroForOne L price price')) * fee_rate' / real fee_proto else 0)\<close>
     and proto_fee'_LE0: \<open>0 \<le> proto_fee'\<close> ;;
 

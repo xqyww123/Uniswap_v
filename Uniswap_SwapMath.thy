@@ -967,7 +967,7 @@ proc computeSwapStep:
 
     text \<open>Now we claim two intermediate lemmas that will help the later construction.\<close> ;;
       
-      pure-fact t1[simp]: \<open>$zeroForOne \<Longrightarrow> price_target \<le> next_price \<and> next_price \<le> price\<close>
+      pure_fact t1[simp]: \<open>$zeroForOne \<Longrightarrow> price_target \<le> next_price \<and> next_price \<le> price\<close>
             and t2[simp]: \<open>\<not> $zeroForOne \<Longrightarrow> price \<le> next_price \<and> next_price \<le> price_target\<close> ;;
 
     if \<open>$zeroForOne\<close>
@@ -987,7 +987,7 @@ proc computeSwapStep:
       \<rightarrow> amountOut is amountOut
   \<medium_right_bracket>.
   
-  pure-fact t3: \<open>\<not> $exactIn \<Longrightarrow> amountOut \<le> - amount_remain\<close>
+  pure_fact t3: \<open>\<not> $exactIn \<Longrightarrow> amountOut \<le> - amount_remain\<close>
 
   text \<open>Therefore, when there is no precision lost, the following branch will never be entered\<close> ;;
 
