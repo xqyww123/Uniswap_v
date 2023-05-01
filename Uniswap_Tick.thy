@@ -118,18 +118,18 @@ definition Ticks :: \<open>(fiction, (liquiditys \<times> liquiditys \<times> gr
 lemma [\<phi>reason 1200]:
   \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> Invt_Ticks current Lg liquidity growth \<delta> ticks
 \<Longrightarrow> ticks \<Ztypecolon> RawTicks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, liquidity, growth, current, \<delta>) \<Ztypecolon> Ticks\<close>
-  \<medium_left_bracket> construct\<phi> \<open>(Lg, liquidity, growth, current, \<delta>) \<Ztypecolon> Ticks\<close> \<medium_right_bracket>. .
+  \<medium_left_bracket> construct\<phi> \<open>(Lg, liquidity, growth, current, \<delta>) \<Ztypecolon> Ticks\<close> \<medium_right_bracket>.
 
 lemma [\<phi>reason 1200]:
   \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> Invt_Ticks current Lg liquidity growth \<delta> ticks
 \<Longrightarrow> ticks \<Ztypecolon> RawTicks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, liquidity, growth, current, \<delta>) \<Ztypecolon> Ticks
-    @action to Ticks\<close> \<medium_left_bracket> \<medium_right_bracket>. .
+    @action to Ticks\<close> \<medium_left_bracket> \<medium_right_bracket>.
 
 lemma [\<phi>reason 3000, \<phi>inhabitance_rule]:
   \<open> (Lg, liquidity, growth, current, \<delta>) \<Ztypecolon> Ticks
     \<i>\<m>\<p>\<l>\<i>\<e>\<s> ticks \<Ztypecolon> RawTicks \<s>\<u>\<b>\<j> ticks. Invt_Ticks current Lg liquidity growth \<delta> ticks
     @action to RawTicks\<close>
-  \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>. .
+  \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>.
 
 end
 
@@ -276,8 +276,8 @@ lemma (in Tick_resource) shift_current_tick_\<phi>app:
 \<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> (if j \<le> i then next_initialized Lg j (i+1) else next_initialized Lg i (j+1))
 \<Longrightarrow> (Lg, L, g, i, \<delta>) \<Ztypecolon> Ticks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, L, g, j, \<delta>) \<Ztypecolon> Ticks \<close>
   \<medium_left_bracket> to \<open>RawTicks\<close> \<medium_right_bracket>
-    using \<phi> by (auto simp add: Invt_Ticks_def Invt_A_Tick_def,
-                smt (verit) Invt_A_Tick_def Invt_Ticks_def growth_outside_def option.pred_inject(1) option.pred_inject(2) the_\<phi>lemmata) .
+    certified using \<phi> by (auto simp add: Invt_Ticks_def Invt_A_Tick_def,
+                          smt (verit) Invt_A_Tick_def Invt_Ticks_def growth_outside_def option.pred_inject(1) option.pred_inject(2) the_\<phi>lemmata) .
 
 lemma (in Tick_resource) shift_current_tick_\<Delta>_\<phi>app:
   \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> j \<in> {MIN_TICK-1..MAX_TICK}
@@ -286,7 +286,7 @@ lemma (in Tick_resource) shift_current_tick_\<Delta>_\<phi>app:
 \<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> (\<forall>k. 0 \<le> \<Delta> k)
 \<Longrightarrow> (Lg, L, g, i, \<delta>) \<Ztypecolon> Ticks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, L, g + \<Delta>, j, \<delta>) \<Ztypecolon> Ticks \<close>
   \<medium_left_bracket> to \<open>RawTicks\<close> \<medium_right_bracket>
-    using \<phi> apply (auto simp add: Invt_Ticks_def Invt_A_Tick_def plus_fun)
+    certified using \<phi> apply (auto simp add: Invt_Ticks_def Invt_A_Tick_def plus_fun)
     subgoal for i' apply (cases \<open>\<delta> i'\<close>; clarsimp simp add: growth_outside_def)
       apply (cases \<open>j \<le> i\<close>; simp) 
       apply (cases \<open>i' \<le> j\<close>; simp)
@@ -351,26 +351,26 @@ proc getFeeGrowthInside:
     if \<open>$lower \<le> $current\<close> \<medium_left_bracket>
       $lower get_feeGrowth0
       $lower get_feeGrowth1
-    \<medium_right_bracket>. \<medium_left_bracket>
+    \<medium_right_bracket> \<medium_left_bracket>
       $global_fee0 sub ($lower get_feeGrowth0)
       $global_fee1 sub ($lower get_feeGrowth1)
-    \<medium_right_bracket>. \<rightarrow> val fee0_below, fee1_below
+    \<medium_right_bracket> \<rightarrow> val fee0_below, fee1_below
 
     if \<open>$current < $upper\<close> \<medium_left_bracket>
       have [simp]: \<open>\<not> (upper \<le> current)\<close> using \<open>current < upper\<close> by linarith ;;
       $upper get_feeGrowth0
       $upper get_feeGrowth1
-    \<medium_right_bracket>. \<medium_left_bracket>
+    \<medium_right_bracket> \<medium_left_bracket>
       have [simp]: \<open>(upper \<le> current)\<close> using \<open>\<not> (current < upper)\<close> by linarith ;;
       $global_fee0 sub ($upper get_feeGrowth0)
       $global_fee1 sub ($upper get_feeGrowth1)
-    \<medium_right_bracket>. \<rightarrow> val fee0_above, fee1_above
+    \<medium_right_bracket> \<rightarrow> val fee0_above, fee1_above
 
     note add_diff_eq[simp] fee0_sum[simp] fee1_sum[simp] diff_diff_eq[symmetric, simp] ;;
       
     \<open>$global_fee0 - $fee0_below - $fee0_above\<close>
     \<open>$global_fee1 - $fee1_below - $fee1_above\<close>
-  \<medium_right_bracket>. .
+  \<medium_right_bracket>.
 
 thm getFeeGrowthInside_def[simplified \<phi>V_simps]
 thm getFeeGrowthInside_\<phi>app
@@ -429,7 +429,7 @@ proc tick_cross:
   note th3 = th2[THEN conjunct1] ;; *)
   ;;
   $i get_liquidityNet
-  \<medium_right_bracket> unfolding Invt_Ticks_def Invt_A_Tick_def
+  \<medium_right_bracket> certified unfolding Invt_Ticks_def Invt_A_Tick_def
     apply (auto simp add: \<phi> plus_fun)
     apply (metis Tick_i the_\<phi>(10) tick_info.sel(2))
     apply (metis Tick_i the_\<phi>(10) tick_info.sel(3))

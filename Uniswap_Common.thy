@@ -117,24 +117,24 @@ lemma [\<phi>reason 1200]:
   \<open> \<t>\<h>\<r>\<e>\<s>\<h>\<o>\<l>\<d> 1
 \<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> i = j
 \<Longrightarrow> i \<Ztypecolon> \<int> \<i>\<m>\<p>\<l>\<i>\<e>\<s> j \<Ztypecolon> Address\<close>
-  \<medium_left_bracket> construct\<phi> \<open>i \<Ztypecolon> Address\<close> \<medium_right_bracket>. .
+  \<medium_left_bracket> construct\<phi> \<open>i \<Ztypecolon> Address\<close> \<medium_right_bracket>.
 
 lemma [\<phi>reason 1200]:
-  \<open> i \<Ztypecolon> \<int> \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> Address @action to Address\<close> \<medium_left_bracket> \<medium_right_bracket>. .
+  \<open> i \<Ztypecolon> \<int> \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> Address @action to Address\<close> \<medium_left_bracket> \<medium_right_bracket>.
 
 lemma [\<phi>reason 1200]:
   \<open> \<t>\<h>\<r>\<e>\<s>\<h>\<o>\<l>\<d> 1
 \<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> i = j
 \<Longrightarrow> i \<Ztypecolon> Address \<i>\<m>\<p>\<l>\<i>\<e>\<s> j \<Ztypecolon> \<int> \<close>
-  \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>. .
+  \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>.
 
-lemma [\<phi>reason 1200, \<phi>inhabitance_rule]: \<open>i \<Ztypecolon> Address \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> \<int> @action to \<int>\<close> \<medium_left_bracket> \<medium_right_bracket>. .
+lemma [\<phi>reason 1200, \<phi>inhabitance_rule]: \<open>i \<Ztypecolon> Address \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> \<int> @action to \<int>\<close> \<medium_left_bracket> \<medium_right_bracket>.
 
-lemma [\<phi>reason 1000]: "\<phi>Equal Address (\<lambda>x y. True) (=)" \<medium_left_bracket> to \<int> \<medium_right_bracket>. .
+lemma [\<phi>reason 1000]: "\<phi>Equal Address (\<lambda>x y. True) (=)" \<medium_left_bracket> to \<int> \<medium_right_bracket>.
 
-lemma [\<phi>reason 1000]: \<open>\<phi>SemType (x \<Ztypecolon> Address) aint\<close> \<medium_left_bracket> to \<int> \<medium_right_bracket>. .
+lemma [\<phi>reason 1000]: \<open>\<phi>SemType (x \<Ztypecolon> Address) aint\<close> \<medium_left_bracket> to \<int> \<medium_right_bracket>.
 
-lemma [\<phi>reason 1000]: "\<phi>Zero aint Address 0" \<medium_left_bracket> \<open>0 \<Ztypecolon> \<int>\<close> \<medium_right_bracket>. .
+lemma [\<phi>reason 1000]: "\<phi>Zero aint Address 0" \<medium_left_bracket> \<open>0 \<Ztypecolon> \<int>\<close> \<medium_right_bracket>.
 
 
 
@@ -161,12 +161,12 @@ lemma [\<phi>reason 1000]: \<open>Is_Literal MAX_TICK\<close> unfolding Is_Liter
 proc (nodef) MIN_TICK[\<phi>synthesis 1100]:
   input \<open>Void\<close>
   output \<open>MIN_TICK \<Ztypecolon> \<v>\<a>\<l> \<int>\<close>
-  \<medium_left_bracket> op_const_aint[where x=MIN_TICK] \<medium_right_bracket>. .
+  \<medium_left_bracket> op_const_aint[where x=MIN_TICK] \<medium_right_bracket>.
 
 proc (nodef) MAX_TICK[\<phi>synthesis 1100]:
   input \<open>Void\<close>
   output \<open>MAX_TICK \<Ztypecolon> \<v>\<a>\<l> \<int>\<close>
-  \<medium_left_bracket> op_const_aint[where x=MAX_TICK] \<medium_right_bracket>. .
+  \<medium_left_bracket> op_const_aint[where x=MAX_TICK] \<medium_right_bracket>.
 
 
 
@@ -177,26 +177,26 @@ lemma [\<phi>reason 1200]:
 \<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> i = j
 \<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> j \<in> {MIN_TICK..MAX_TICK}
 \<Longrightarrow> i \<Ztypecolon> \<int> \<i>\<m>\<p>\<l>\<i>\<e>\<s> j \<Ztypecolon> Tick\<close>
-  \<medium_left_bracket> construct\<phi> \<open>i \<Ztypecolon> Tick\<close> \<medium_right_bracket>. .
+  \<medium_left_bracket> construct\<phi> \<open>i \<Ztypecolon> Tick\<close> \<medium_right_bracket>.
 
 lemma [\<phi>reason 1200]:
   \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> i \<in> {MIN_TICK..MAX_TICK}
-\<Longrightarrow> i \<Ztypecolon> \<int> \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> Tick @action to Tick\<close> \<medium_left_bracket> \<medium_right_bracket>. .
+\<Longrightarrow> i \<Ztypecolon> \<int> \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> Tick @action to Tick\<close> \<medium_left_bracket> \<medium_right_bracket>.
 
 lemma [\<phi>reason 1200]:
   \<open> \<t>\<h>\<r>\<e>\<s>\<h>\<o>\<l>\<d> 1
 \<Longrightarrow> \<p>\<r>\<e>\<m>\<i>\<s>\<e> i = j
 \<Longrightarrow> i \<Ztypecolon> Tick \<i>\<m>\<p>\<l>\<i>\<e>\<s> j \<Ztypecolon> \<int> \<a>\<n>\<d> i \<in> {MIN_TICK..MAX_TICK}\<close>
-  \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>. .
+  \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>.
 
 lemma [\<phi>reason 1200, \<phi>inhabitance_rule]:
-  \<open>i \<Ztypecolon> Tick \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> \<int> \<a>\<n>\<d> i \<in> {MIN_TICK..MAX_TICK} @action to \<int>\<close> \<medium_left_bracket> \<medium_right_bracket>. .
+  \<open>i \<Ztypecolon> Tick \<i>\<m>\<p>\<l>\<i>\<e>\<s> i \<Ztypecolon> \<int> \<a>\<n>\<d> i \<in> {MIN_TICK..MAX_TICK} @action to \<int>\<close> \<medium_left_bracket> \<medium_right_bracket>.
 
-lemma [\<phi>reason 1000]: "\<phi>Equal Tick (\<lambda>x y. True) (=)" \<medium_left_bracket> to \<int> \<medium_right_bracket>. .
+lemma [\<phi>reason 1000]: "\<phi>Equal Tick (\<lambda>x y. True) (=)" \<medium_left_bracket> to \<int> \<medium_right_bracket>.
 
-lemma [\<phi>reason 1000]: \<open>\<phi>SemType (x \<Ztypecolon> Tick) aint\<close> \<medium_left_bracket> to \<int> \<medium_right_bracket>. .
+lemma [\<phi>reason 1000]: \<open>\<phi>SemType (x \<Ztypecolon> Tick) aint\<close> \<medium_left_bracket> to \<int> \<medium_right_bracket>.
 
-lemma [\<phi>reason 1000]: "\<phi>Zero aint Tick 0" \<medium_left_bracket> \<open>0 \<Ztypecolon> \<int>\<close> \<medium_right_bracket>. .
+lemma [\<phi>reason 1000]: "\<phi>Zero aint Tick 0" \<medium_left_bracket> \<open>0 \<Ztypecolon> \<int>\<close> \<medium_right_bracket>.
 
 
 

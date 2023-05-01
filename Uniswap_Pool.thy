@@ -55,7 +55,7 @@ lemma [\<phi>reason 1000]: \<open> Is_Literal fee\<close> unfolding Is_Literal_d
 proc (nodef) fee[\<phi>synthesis 1100]:
   input \<open>Void\<close>
   output \<open>fee_rate \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
-  \<medium_left_bracket> op_const_areal[where x=fee_rate] \<medium_right_bracket>. .
+  \<medium_left_bracket> op_const_areal[where x=fee_rate] \<medium_right_bracket>.
 
 
 locale Pool = Tickmap_spec + Tick_spec +
@@ -142,7 +142,7 @@ lemma [\<phi>reason 1200]:
    (Lg, L, growth, i, \<delta>) \<Ztypecolon> Ticks
   \<a>\<n>\<d> (tick_of_price price = i \<or> price = price_of (i + 1))
   @action to RAW\<close>
-  \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>. .
+  \<medium_left_bracket> destruct\<phi> _ \<medium_right_bracket>.
 
 lemma [\<phi>reason 100]:
   \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> (tick_of_price price = i \<or> price = price_of (i + 1))
@@ -154,7 +154,7 @@ lemma [\<phi>reason 100]:
   \<medium_left_bracket> premises _ and I
     I 
     construct\<phi> \<open>(price, i, unlocked, Lg, L, growth, \<delta>, fee_proto, protocol_fees) \<Ztypecolon> Uniswap_Pool\<close>
-  \<medium_right_bracket>. .
+  \<medium_right_bracket>.
 
 declare Invt_Ticks_def[simp] Invt_A_Tick_def[simp]
 
@@ -258,7 +258,7 @@ proc swap:
                     \<and> (if 0 < fee_proto then amountIn * fee_rate' / real fee_proto else 0) = pf
                ))
           \<and> Guard: (ar \<noteq> 0 \<and> pr \<noteq> price_limit)\<close>
-    \<medium_left_bracket> \<open>$amount_remaining \<noteq> 0 \<and> $price \<noteq> $price_limit\<close> \<medium_right_bracket>.
+    \<medium_left_bracket> \<open>$amount_remaining \<noteq> 0 \<and> $price \<noteq> $price_limit\<close> \<medium_right_bracket>
     \<medium_left_bracket>
       $price \<rightarrow> val step_price_start ;;
       nextInitializedTickWithinOneWord ($tick, $zeroForOne) \<exists>tick_next' \<rightarrow> var tick_next, val initialized ;;
@@ -267,9 +267,9 @@ proc swap:
  
       if \<open>$tick_next < MIN_TICK\<close> \<medium_left_bracket>
         \<open>MIN_TICK\<close> \<rightarrow> tick_next
-      \<medium_right_bracket>. \<medium_left_bracket>
-        if \<open>$tick_next > MAX_TICK\<close> \<medium_left_bracket> \<open>MAX_TICK\<close> \<rightarrow> tick_next \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>.
-      \<medium_right_bracket>. as \<open>tick_next \<Ztypecolon> Tick\<close>
+      \<medium_right_bracket> \<medium_left_bracket>
+        if \<open>$tick_next > MAX_TICK\<close> \<medium_left_bracket> \<open>MAX_TICK\<close> \<rightarrow> tick_next \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket>
+      \<medium_right_bracket> as \<open>tick_next \<Ztypecolon> Tick\<close>
  
       let ?growth' = \<open>growth + fee_growth zeroForOne fee_rate' L price pr\<close> ;;
 
@@ -333,16 +333,16 @@ proc swap:
       if $exactInput \<medium_left_bracket>
           \<open>$amount_remaining - ($amountIn + $feeAmount)\<close> \<rightarrow> amount_remaining
           \<open>$amount_calculated - $amountOut\<close> \<rightarrow> amount_calculated
-      \<medium_right_bracket>. \<medium_left_bracket>
+      \<medium_right_bracket> \<medium_left_bracket>
           \<open>$amount_remaining + $amountOut\<close> \<rightarrow> amount_remaining
           \<open>$amount_calculated + ($amountIn + $feeAmount)\<close> \<rightarrow> amount_calculated
-      \<medium_right_bracket>.
+      \<medium_right_bracket>
 
       if \<open>$feeProtocol > 0\<close> \<medium_left_bracket>
         \<open>$feeAmount / real $feeProtocol\<close> \<rightarrow> val delta
         \<open>$feeAmount - $delta\<close> \<rightarrow> feeAmount
         \<open>$protocolFee + $delta\<close> \<rightarrow> protocolFee
-      \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>.
+      \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket>
 
       define step_growth where \<open>step_growth = (if L j = 0 then 0 else fee_amount / L j)\<close>
       define \<Delta>growth where \<open>\<Delta>growth = fee_growth zeroForOne fee_rate' L pr next_price\<close> ;;
@@ -352,7 +352,7 @@ proc swap:
 
       if \<open>$liquidity > 0\<close> \<medium_left_bracket>
         \<open>$fee_growth_global + ($feeAmount / $liquidity)\<close> \<rightarrow> fee_growth_global
-      \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>.
+      \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket>
       is \<open>I_fee_growth_global (?growth' + \<Delta>growth)\<close> ;;
 
       define real_next_tick where \<open>real_next_tick = (if zeroForOne then tick_next - 1 else tick_next)\<close> 
@@ -378,16 +378,16 @@ proc swap:
             
             \<open>_ \<Ztypecolon> Ticks\<close> is \<open>(_,_, ?growth' + \<Delta>growth, real_next_tick,_)\<close>
 
-            if $zeroForOne \<medium_left_bracket> \<open>- $liquidityNet\<close> \<rightarrow> liquidityNet \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
+            if $zeroForOne \<medium_left_bracket> \<open>- $liquidityNet\<close> \<rightarrow> liquidityNet \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> ;;
               
               \<open>$liquidity + $liquidityNet\<close> \<rightarrow> $liquidity is \<open>L real_next_tick\<close>
 
-            \<medium_right_bracket>. \<medium_left_bracket>
+            \<medium_right_bracket> \<medium_left_bracket>
 
               \<open>\<v>\<a>\<r>[liquidity]\<close> is \<open>L real_next_tick\<close>
 
               shift_current_tick_\<Delta>[where j=\<open>real_next_tick\<close> and \<Delta>=\<Delta>growth]
-        \<medium_right_bracket>.
+        \<medium_right_bracket>
 
         sel (
           \<open>$tick_next - 1\<close> to Tick,
@@ -398,7 +398,7 @@ proc swap:
 
         pure_fact [simp]: \<open>real_next_tick < MAX_TICK\<close>
 
-      \<medium_right_bracket> for \<open>_ \<s>\<u>\<b>\<j> real_next_tick < MAX_TICK\<close> ..
+      \<medium_right_bracket> for \<open>_ \<s>\<u>\<b>\<j> real_next_tick < MAX_TICK\<close>
       \<medium_left_bracket>
         pure_fact \<open>  zeroForOne \<Longrightarrow> tick_of_price next_price \<le> j\<close> 
               and \<open>\<not> zeroForOne \<Longrightarrow> j \<le> tick_of_price next_price\<close>
@@ -408,13 +408,13 @@ proc swap:
 
         if \<open>$price \<noteq> $step_price_start\<close> \<medium_left_bracket>
           getTickAtSqrtRatio ($price) \<rightarrow> tick
-        \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. is \<open>tick_of_price next_price\<close> ;;
+        \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> is \<open>tick_of_price next_price\<close> ;;
 
         \<open>\<v>\<a>\<r>[liquidity]\<close> is \<open>L (tick_of_price next_price)\<close>  ;;
 
         shift_current_tick_\<Delta>[where j=\<open>tick_of_price next_price\<close> and \<Delta>=\<Delta>growth]
         
-      \<medium_right_bracket>.
+      \<medium_right_bracket>
 
       define real2_next_tick where
         \<open>real2_next_tick = (if next_price = price_of tick_next then real_next_tick else tick_of_price next_price)\<close> ;;
@@ -435,14 +435,14 @@ proc swap:
             and Iv5: \<open>?growth' + \<Delta>growth = growth + fee_growth zeroForOne fee_rate' L price next_price\<close>
             
 
-  \<medium_right_bracket> using \<open>let _ = _ in _\<close> by (auto simp add: Iv1 Iv2 Iv3 Iv4 Iv5 Iv6 d2 add_divide_distrib distrib_right) ;;
+  \<medium_right_bracket> certified using \<open>let _ = _ in _\<close> by (auto simp add: Iv1 Iv2 Iv3 Iv4 Iv5 Iv6 d2 add_divide_distrib distrib_right) ;;
     
     \<exists>amount_remaining', price', amount_calculated', proto_fee', i' ;;
 
   set_pool_tick ($tick)
   set_pool_price ($price) ;;
 
-  if \<open>$liquidityStart \<noteq> $liquidity\<close> \<medium_left_bracket> set_pool_liquidity ( $liquidity ) \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>.
+  if \<open>$liquidityStart \<noteq> $liquidity\<close> \<medium_left_bracket> set_pool_liquidity ( $liquidity ) \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket>
       is \<open>pool _ _ _ (L i') _ _ _\<close>
 
   pure_fact proto_fee': \<open>proto_fee' =
@@ -455,28 +455,28 @@ proc swap:
     is \<open>pool _ _ _ _ (gSum (growth + fee_growth zeroForOne fee_rate' L price price')) _ _\<close>
     certified by (auto simp add: prod_eq_iff growth.map_fee0_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>(15)) (metis fee_growth_is_0_when_zeroForOne growth.fee1_def the_\<phi>(1) the_\<phi>(15) the_\<phi>(18)) ;;
 
-    if \<open>$protocolFee > 0\<close> \<medium_left_bracket> set_pool_protocal_fee_0 (\<open>fst (pool.protocol_fees _) + $protocolFee\<close>) \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>.
+    if \<open>$protocolFee > 0\<close> \<medium_left_bracket> set_pool_protocal_fee_0 (\<open>fst (pool.protocol_fees _) + $protocolFee\<close>) \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket>
 
-   \<medium_right_bracket>. \<medium_left_bracket>
+   \<medium_right_bracket> \<medium_left_bracket>
 
     set_pool_fee_growth_1 ($fee_growth_global)
     is \<open>pool price' i' False (L i') (gSum (growth + fee_growth zeroForOne fee_rate' L price price')) fee_protocol protocol_fees\<close>
       certified by (auto simp add: prod_eq_iff growth.map_fee1_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>(15)) (metis \<open>0 < price\<close> fee_growth_is_0_when_not_zeroForOne growth.fee0_def the_\<phi>(15) the_\<phi>(18))  ;;
 
-    if \<open>$protocolFee > 0\<close> \<medium_left_bracket> set_pool_protocal_fee_1 (\<open>snd (pool.protocol_fees _) + $protocolFee\<close>) \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. ;;
+    if \<open>$protocolFee > 0\<close> \<medium_left_bracket> set_pool_protocal_fee_1 (\<open>snd (pool.protocol_fees _) + $protocolFee\<close>) \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> ;;
 
-  \<medium_right_bracket>.
+  \<medium_right_bracket>
   is \<open>pool price' i' False (L i') (gSum (growth + fee_growth zeroForOne fee_rate' L price price')) fee_protocol
            (protocol_fees + \<Delta>protocal_fees fee_protocol zeroForOne L price price' fee_rate')\<close> 
-  certified apply (cases protocol_fees; auto simp add: \<Delta>protocal_fees_def fee_proto_def proto_fee' zero_prod_def)
-    using fee_proto_def proto_fee' proto_fee'_LE0 zero_prod_def apply fastforce
-    using fee_proto_def proto_fee' proto_fee'_LE0 zero_prod_def apply fastforce
-    using fee_proto_def proto_fee' proto_fee'_LE0 apply force
-    using fee_proto_def proto_fee' proto_fee'_LE0 by fastforce;;
+  certified by (cases protocol_fees; auto simp add: \<Delta>protocal_fees_def fee_proto_def proto_fee' zero_prod_def,
+                (insert fee_proto_def proto_fee' proto_fee'_LE0 zero_prod_def, fastforce)[1],
+                (insert fee_proto_def proto_fee' proto_fee'_LE0 zero_prod_def, fastforce)[1],
+                (insert fee_proto_def proto_fee' proto_fee'_LE0, force)[1],
+                (insert fee_proto_def proto_fee' proto_fee'_LE0, fastforce)[1]) ;;
 
   if \<open>$zeroForOne = $exactInput\<close>
-    \<medium_left_bracket> \<open>$amount_specified - $amount_remaining\<close>, $amount_calculated \<medium_right_bracket>.
-    \<medium_left_bracket> $amount_calculated, \<open>$amount_specified - $amount_remaining\<close> \<medium_right_bracket>. \<rightarrow> val amount0, amount1
+    \<medium_left_bracket> \<open>$amount_specified - $amount_remaining\<close>, $amount_calculated \<medium_right_bracket>
+    \<medium_left_bracket> $amount_calculated, \<open>$amount_specified - $amount_remaining\<close> \<medium_right_bracket> \<rightarrow> val amount0, amount1
   
   $amount0 is \<open>if zeroForOne then fst (reserve_change' L price' price) / (1 - fee_rate)
                              else - fst (reserve_change' L price price')\<close>
@@ -487,20 +487,20 @@ proc swap:
            \<rightarrow> val amount1
 
   if $zeroForOne \<medium_left_bracket>
-    if \<open>$amount1 < 0\<close> \<medium_left_bracket> \<open>-$amount1\<close> \<medium_right_bracket>. \<medium_left_bracket> \<open>0 \<Ztypecolon> \<real>\<close> \<medium_right_bracket>.
+    if \<open>$amount1 < 0\<close> \<medium_left_bracket> \<open>-$amount1\<close> \<medium_right_bracket> \<medium_left_bracket> \<open>0 \<Ztypecolon> \<real>\<close> \<medium_right_bracket>
     is \<open>snd (reserve_change' L price' price)\<close>
 
     $amount0 is \<open>fst (reserve_change' L price' price) / (1 - fee_rate)\<close>
-  \<medium_right_bracket>. \<medium_left_bracket>
-    if \<open>$amount0 < 0\<close> \<medium_left_bracket> \<open>-$amount0\<close> \<medium_right_bracket>. \<medium_left_bracket> \<open>0 \<Ztypecolon> \<real>\<close> \<medium_right_bracket>.
+  \<medium_right_bracket> \<medium_left_bracket>
+    if \<open>$amount0 < 0\<close> \<medium_left_bracket> \<open>-$amount0\<close> \<medium_right_bracket> \<medium_left_bracket> \<open>0 \<Ztypecolon> \<real>\<close> \<medium_right_bracket>
     is \<open>fst (reserve_change' L price price')\<close>
 
     $amount1 is \<open>snd (reserve_change' L price price') / (1 - fee_rate)\<close>
-  \<medium_right_bracket>.
+  \<medium_right_bracket>
 
   set_pool_unlock (True)
 
-\<medium_right_bracket>. .
+\<medium_right_bracket>.
 
 end
 

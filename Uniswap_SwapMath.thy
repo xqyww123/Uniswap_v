@@ -946,22 +946,22 @@ proc computeSwapStep:
 
     if \<open>$exactIn\<close> \<medium_left_bracket>
       \<open>$amount_remain * (1 - $feePips)\<close> \<rightarrow> val amountRemainingLessFee ;;
-      if \<open>$zeroForOne\<close> \<medium_left_bracket> getAmount0Delta ($price_target, $price, $L) \<medium_right_bracket>.
-                       \<medium_left_bracket> getAmount1Delta ($price, $price_target, $L) \<medium_right_bracket>. \<rightarrow> amountIn ;;
+      if \<open>$zeroForOne\<close> \<medium_left_bracket> getAmount0Delta ($price_target, $price, $L) \<medium_right_bracket>
+                       \<medium_left_bracket> getAmount1Delta ($price, $price_target, $L) \<medium_right_bracket> \<rightarrow> amountIn ;;
       if \<open>$amountRemainingLessFee \<ge> $amountIn\<close> \<medium_left_bracket>
           $price_target \<rightarrow> next_price
-      \<medium_right_bracket>. \<medium_left_bracket>
+      \<medium_right_bracket> \<medium_left_bracket>
           getNextSqrtPriceFromInput ($price, $L, $amountRemainingLessFee, $zeroForOne) \<rightarrow> next_price
-      \<medium_right_bracket>. is \<open>next_price\<close>  
-    \<medium_right_bracket>. \<medium_left_bracket>
-      if \<open>$zeroForOne\<close> \<medium_left_bracket> getAmount1Delta ($price_target, $price, $L) \<medium_right_bracket>.
-                       \<medium_left_bracket> getAmount0Delta ($price, $price_target, $L) \<medium_right_bracket>. \<rightarrow> amountOut ;;
+      \<medium_right_bracket> is \<open>next_price\<close>  
+    \<medium_right_bracket> \<medium_left_bracket>
+      if \<open>$zeroForOne\<close> \<medium_left_bracket> getAmount1Delta ($price_target, $price, $L) \<medium_right_bracket>
+                       \<medium_left_bracket> getAmount0Delta ($price, $price_target, $L) \<medium_right_bracket> \<rightarrow> amountOut ;;
       if \<open>-$amount_remain \<ge> $amountOut\<close> \<medium_left_bracket>
           $price_target \<rightarrow> next_price
-      \<medium_right_bracket>. \<medium_left_bracket>
+      \<medium_right_bracket> \<medium_left_bracket>
           getNextSqrtPriceFromOutput ($price, $L, neg ($amount_remain), $zeroForOne) \<rightarrow> next_price
-      \<medium_right_bracket>. is \<open>next_price\<close>
-    \<medium_right_bracket>.
+      \<medium_right_bracket> is \<open>next_price\<close>
+    \<medium_right_bracket>
 
     \<open>$price_target = $next_price\<close> \<rightarrow> val max
 
@@ -971,21 +971,21 @@ proc computeSwapStep:
             and t2[simp]: \<open>\<not> $zeroForOne \<Longrightarrow> price \<le> next_price \<and> next_price \<le> price_target\<close> ;;
 
     if \<open>$zeroForOne\<close>
-       \<medium_left_bracket>
-      if \<open>$max \<and> $exactIn\<close> \<medium_left_bracket> $amountIn \<medium_right_bracket>. \<medium_left_bracket>
-        getAmount0Delta ($next_price, $price, $L) \<medium_right_bracket>.
+    \<medium_left_bracket>
+      if \<open>$max \<and> $exactIn\<close> \<medium_left_bracket> $amountIn \<medium_right_bracket> \<medium_left_bracket>
+        getAmount0Delta ($next_price, $price, $L) \<medium_right_bracket>
       \<rightarrow> amountIn is amountIn
-      if \<open>$max \<and> \<not> $exactIn\<close> \<medium_left_bracket> $amountOut \<medium_right_bracket>. \<medium_left_bracket> 
-        getAmount1Delta ($next_price, $price, $L) \<medium_right_bracket>.
+      if \<open>$max \<and> \<not> $exactIn\<close> \<medium_left_bracket> $amountOut \<medium_right_bracket> \<medium_left_bracket> 
+        getAmount1Delta ($next_price, $price, $L) \<medium_right_bracket>
       \<rightarrow> amountOut is amountOut
-    \<medium_right_bracket>. \<medium_left_bracket>
-      if \<open>$max \<and> $exactIn\<close> \<medium_left_bracket> $amountIn \<medium_right_bracket>. \<medium_left_bracket>
-        getAmount1Delta ($price, $next_price, $L) \<medium_right_bracket>.
+    \<medium_right_bracket> \<medium_left_bracket>
+      if \<open>$max \<and> $exactIn\<close> \<medium_left_bracket> $amountIn \<medium_right_bracket> \<medium_left_bracket>
+        getAmount1Delta ($price, $next_price, $L) \<medium_right_bracket>
       \<rightarrow> amountIn is amountIn
-      if \<open>$max \<and> \<not> $exactIn\<close> \<medium_left_bracket> $amountOut \<medium_right_bracket>. \<medium_left_bracket>
-        getAmount0Delta ($price, $next_price, $L) \<medium_right_bracket>.
+      if \<open>$max \<and> \<not> $exactIn\<close> \<medium_left_bracket> $amountOut \<medium_right_bracket> \<medium_left_bracket>
+        getAmount0Delta ($price, $next_price, $L) \<medium_right_bracket>
       \<rightarrow> amountOut is amountOut
-  \<medium_right_bracket>.
+  \<medium_right_bracket>
   
   pure_fact t3: \<open>\<not> $exactIn \<Longrightarrow> amountOut \<le> - amount_remain\<close>
 
@@ -993,15 +993,15 @@ proc computeSwapStep:
 
   if \<open>\<not> $exactIn \<and> $amountOut > - $amount_remain\<close> \<medium_left_bracket>
     \<open>- $amount_remain\<close> \<rightarrow> amountOut
-  \<medium_right_bracket>. \<medium_left_bracket> \<medium_right_bracket>. is amountOut ;;
+  \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> is amountOut ;;
 
   if \<open>$exactIn \<and> $next_price \<noteq> $price_target\<close> \<medium_left_bracket>
     \<open>$amount_remain - $amountIn\<close> \<rightarrow> feeAmount is \<open>amountIn * feePips / (1 - feePips)\<close>
       (*This is a problem cannot be automated*)
 
-  \<medium_right_bracket>. \<medium_left_bracket> \<open>$amountIn * $feePips / (1 - $feePips)\<close> \<rightarrow> feeAmount \<medium_right_bracket>.
+  \<medium_right_bracket> \<medium_left_bracket> \<open>$amountIn * $feePips / (1 - $feePips)\<close> \<rightarrow> feeAmount \<medium_right_bracket>
  
   return ($next_price, $amountIn, $amountOut, $feeAmount)
-\<medium_right_bracket>. .
+\<medium_right_bracket>.
   
 end
