@@ -435,7 +435,7 @@ proc swap:
             and Iv5: \<open>?growth' + \<Delta>growth = growth + fee_growth zeroForOne fee_rate' L price next_price\<close>
             
 
-  \<medium_right_bracket> certified using \<open>let _ = _ in _\<close> by (auto simp add: Iv1 Iv2 Iv3 Iv4 Iv5 Iv6 d2 add_divide_distrib distrib_right) ;;
+  \<medium_right_bracket> certified using \<open>let _ = _ in _\<close> Iv1 Iv2 Iv3 Iv4 Iv5 Iv6 by (auto simp add: d2 add_divide_distrib distrib_right) ;;
     
     \<exists>amount_remaining', price', amount_calculated', proto_fee', i' ;;
 
