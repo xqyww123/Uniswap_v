@@ -123,7 +123,7 @@ lemma [\<phi>reason 1200]:
 lemma [\<phi>reason 1200]:
   \<open> \<p>\<r>\<e>\<m>\<i>\<s>\<e> Invt_Ticks current Lg liquidity growth \<delta> ticks
 \<Longrightarrow> ticks \<Ztypecolon> RawTicks \<i>\<m>\<p>\<l>\<i>\<e>\<s> (Lg, liquidity, growth, current, \<delta>) \<Ztypecolon> Ticks
-    @action to Ticks\<close> \<medium_left_bracket> \<medium_right_bracket>.
+    @action to Ticks\<close> \<medium_left_bracket> \<medium_right_bracket> .
 
 lemma [\<phi>reason 3000, \<phi>inhabitance_rule]:
   \<open> (Lg, liquidity, growth, current, \<delta>) \<Ztypecolon> Ticks
@@ -349,31 +349,26 @@ proc getFeeGrowthInside:
                   growth_outside_def, THEN conjunct1, THEN spec[where x=upper], simplified] ;;
 
     if \<open>$lower \<le> $current\<close> \<medium_left_bracket>
-      $lower get_feeGrowth0
-      $lower get_feeGrowth1
+        $lower get_feeGrowth0,
+        $lower get_feeGrowth1
     \<medium_right_bracket> \<medium_left_bracket>
-      $global_fee0 sub ($lower get_feeGrowth0)
-      $global_fee1 sub ($lower get_feeGrowth1)
+        $global_fee0 - ($lower get_feeGrowth0),
+        $global_fee1 - ($lower get_feeGrowth1)
     \<medium_right_bracket> \<rightarrow> val fee0_below, fee1_below
 
     if \<open>$current < $upper\<close> \<medium_left_bracket>
-      have [simp]: \<open>\<not> (upper \<le> current)\<close> using \<open>current < upper\<close> by linarith ;;
-      $upper get_feeGrowth0
-      $upper get_feeGrowth1
+        have [simp]: \<open>\<not> (upper \<le> current)\<close> using \<open>current < upper\<close> by linarith ;;
+        $upper get_feeGrowth0,
+        $upper get_feeGrowth1
     \<medium_right_bracket> \<medium_left_bracket>
-      have [simp]: \<open>(upper \<le> current)\<close> using \<open>\<not> (current < upper)\<close> by linarith ;;
-      $global_fee0 sub ($upper get_feeGrowth0)
-      $global_fee1 sub ($upper get_feeGrowth1)
+        have [simp]: \<open>(upper \<le> current)\<close> using \<open>\<not> (current < upper)\<close> by linarith ;;
+        $global_fee0 - ($upper get_feeGrowth0),
+        $global_fee1 - ($upper get_feeGrowth1)
     \<medium_right_bracket> \<rightarrow> val fee0_above, fee1_above
-
-    note add_diff_eq[simp] fee0_sum[simp] fee1_sum[simp] diff_diff_eq[symmetric, simp] ;;
       
-    \<open>$global_fee0 - $fee0_below - $fee0_above\<close>
+    \<open>$global_fee0 - $fee0_below - $fee0_above\<close>,
     \<open>$global_fee1 - $fee1_below - $fee1_above\<close>
   \<medium_right_bracket>.
-
-thm getFeeGrowthInside_def[simplified \<phi>V_simps]
-thm getFeeGrowthInside_\<phi>app
 
 (*\<heavy_comma>
           liq i - liq current \<Ztypecolon> \<v>\<a>\<l> \<int> *)
@@ -399,8 +394,8 @@ proc tick_cross:
     where Tick_i[simp]: \<open>ticks i = tick_info (fee0', fee1') liqG' liqN' init'\<close> (*(fee0', fee1', spl', tc', time')*)
     by (metis surj_pair tick_info.exhaust)
 
-  ;; $i set_feeGrowth0 ($fee0 sub ($i get_feeGrowth0))
-        set_feeGrowth1 ($fee1 sub ($i get_feeGrowth1)) 
+  ;; $i set_feeGrowth0 ($fee0 - $i get_feeGrowth0)
+        set_feeGrowth1 ($fee1 - $i get_feeGrowth1)
      (* set_secondsPerLiquidity ($sec_per_liq sub ($i get_secondsPerLiquidity))
         set_tickCumulative ($tick_cumu sub ($i get_tickCumulative))
         set_seconds ($time sub ($i get_seconds))*) ;;

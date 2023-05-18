@@ -502,6 +502,6 @@ proc swap:
 
 \<medium_right_bracket>.
 
-end
+end 
 
 end

@@ -29,7 +29,7 @@ proc getAmount0Delta:
   output \<open>(liq / rA - liq / rB) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   is [routine]
   \<medium_left_bracket> if \<open>$liq < 0\<close>
-    \<medium_left_bracket> neg (getAmount0Delta'($rA, $rB, \<open>-$liq\<close>)) \<medium_right_bracket>
+    \<medium_left_bracket> ~ getAmount0Delta'($rA, $rB, \<open>-$liq\<close>) \<medium_right_bracket>
     \<medium_left_bracket> getAmount0Delta'($rA, $rB, $liq) \<medium_right_bracket>
   \<medium_right_bracket>.
 
@@ -55,7 +55,7 @@ proc getAmount1Delta:
   output \<open>liq * (rB - rA) \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   is [routine]
   \<medium_left_bracket> if \<open>$liq < 0\<close>
-    \<medium_left_bracket> neg (getAmount1Delta' ($rA, $rB, \<open>-$liq\<close>)) \<medium_right_bracket>
+    \<medium_left_bracket> ~ getAmount1Delta' ($rA, $rB, \<open>-$liq\<close>) \<medium_right_bracket>
     \<medium_left_bracket> getAmount1Delta' ($rA, $rB, $liq) \<medium_right_bracket>
   \<medium_right_bracket>.
 
@@ -99,8 +99,6 @@ proc getAmount0Delta_rounded:
     \<medium_left_bracket> $rA $rB $liq \<open>True\<close> getAmount0Delta'_rounded \<medium_right_bracket>
   \<medium_right_bracket>.
 
-
-
 proc getNextSqrtPriceFromAmount0:
   input \<open>sp \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> liq \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> amount \<Ztypecolon> \<v>\<a>\<l> \<real>\<heavy_comma> add \<Ztypecolon> \<v>\<a>\<l> \<bool>\<close>
   premises \<open>0 < liq \<and> 0 < sp\<close>
@@ -117,7 +115,7 @@ proc getNextSqrtPriceFromAmount0:
           return (\<open>$numerator1 * $sp / $denominator\<close>)
         \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket>
       \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> ;;
-      return ($numerator1 div (\<open>$numerator1 / $sp\<close> add ($amount)))
+      return ($numerator1 / (\<open>$numerator1 / $sp\<close> + $amount))
     \<medium_right_bracket> \<medium_left_bracket>
       \<open>$amount * $sp\<close> \<rightarrow> val product ;;
       require (\<open>$product / $amount = $sp\<close>) ;;
@@ -192,7 +190,7 @@ proc getNextSqrtPriceFromAmount0_int:
           return (\<open>$numerator1 * $sp / $denominator\<close>)
         \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket>
       \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> ;;
-      return ($numerator1 div (\<open>$numerator1 / $sp\<close> add ($amount to_real)))
+      return ($numerator1 / (\<open>$numerator1 / $sp\<close> + $amount to_real))
     \<medium_right_bracket> \<medium_left_bracket>
       \<open>real $amount * $sp\<close> \<rightarrow> val product ;;
       require (\<open>$product / real $amount = $sp\<close>) ;;

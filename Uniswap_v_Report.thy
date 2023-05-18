@@ -66,7 +66,7 @@ on the prices is constant.\<close>
 
 lemma Is_partition__definition:
   \<open>Is_partition L\<^sub>p l u [] \<longleftrightarrow> Const_Interval L\<^sub>p l u\<close>
-  \<open>Is_partition L\<^sub>p l u ([h] + r) \<longleftrightarrow> Const_Interval L\<^sub>p l h \<and> Is_partition L\<^sub>p h u r\<close>
+  \<open>Is_partition L\<^sub>p l u ([h] @ r) \<longleftrightarrow> Const_Interval L\<^sub>p l h \<and> Is_partition L\<^sub>p h u r\<close>
   by simp+
 
 text \<open>We use an order list (a chain) to represent a partition, e.g. \<^term>\<open>[x\<^sub>0,x\<^sub>1,x\<^sub>2]\<close> for \<open>[l,x\<^sub>0), [x\<^sub>0,x\<^sub>1), [x\<^sub>1,x\<^sub>2), [x\<^sub>2,u)\<close>.
@@ -78,7 +78,7 @@ Then, we can add up the evaluation of every partition to get the integral, by a 
 lemma partition_intergral__definition:
   \<open>partition_integral reserve_change_in_a_step L\<^sub>p low up []
       = reserve_change_in_a_step (L\<^sub>p low) low up\<close>
-  \<open>partition_integral reserve_change_in_a_step L\<^sub>p low up ([h] + r)
+  \<open>partition_integral reserve_change_in_a_step L\<^sub>p low up ([h] @ r)
       = reserve_change_in_a_step (L\<^sub>p low) low h + partition_integral reserve_change_in_a_step L\<^sub>p h up r\<close>
   by simp+
 

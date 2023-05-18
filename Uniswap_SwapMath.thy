@@ -959,7 +959,7 @@ proc computeSwapStep:
       if \<open>-$amount_remain \<ge> $amountOut\<close> \<medium_left_bracket>
           $price_target \<rightarrow> next_price
       \<medium_right_bracket> \<medium_left_bracket>
-          getNextSqrtPriceFromOutput ($price, $L, neg ($amount_remain), $zeroForOne) \<rightarrow> next_price
+          getNextSqrtPriceFromOutput ($price, $L, ~ $amount_remain, $zeroForOne) \<rightarrow> next_price
       \<medium_right_bracket> is \<open>next_price\<close>
     \<medium_right_bracket>
 
