@@ -114,12 +114,12 @@ lemma [\<phi>reason 1000]:
 proc (nodef) MIN_PRICE[\<phi>synthesis 1100]:
   input \<open>Void\<close>
   output \<open>MIN_PRICE \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
-  \<medium_left_bracket> op_const_areal[where x=\<open>MIN_PRICE\<close>] \<medium_right_bracket>.
+  \<medium_left_bracket> apply_rule op_const_areal[where x=\<open>MIN_PRICE\<close>] \<medium_right_bracket>.
 
 proc (nodef) MAX_PRICE[\<phi>synthesis 1100]:
   input \<open>Void\<close>
   output \<open>MAX_PRICE \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
-  \<medium_left_bracket> op_const_areal[where x=\<open>MAX_PRICE\<close>] \<medium_right_bracket>.
+  \<medium_left_bracket> apply_rule op_const_areal[where x=\<open>MAX_PRICE\<close>] \<medium_right_bracket>.
 
 lemma
   \<open>0 < p \<Longrightarrow> p < price_of A \<Longrightarrow> tick_of_price p < A\<close>

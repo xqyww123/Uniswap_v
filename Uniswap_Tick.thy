@@ -349,25 +349,25 @@ proc getFeeGrowthInside:
                   growth_outside_def, THEN conjunct1, THEN spec[where x=upper], simplified] ;;
 
     if \<open>$lower \<le> $current\<close> \<medium_left_bracket>
-        $lower get_feeGrowth0,
-        $lower get_feeGrowth1
+       ($lower get_feeGrowth0,
+        $lower get_feeGrowth1)
     \<medium_right_bracket> \<medium_left_bracket>
-        $global_fee0 - ($lower get_feeGrowth0),
-        $global_fee1 - ($lower get_feeGrowth1)
+       ($global_fee0 - ($lower get_feeGrowth0),
+        $global_fee1 - ($lower get_feeGrowth1))
     \<medium_right_bracket> \<rightarrow> val fee0_below, fee1_below
 
     if \<open>$current < $upper\<close> \<medium_left_bracket>
         have [simp]: \<open>\<not> (upper \<le> current)\<close> using \<open>current < upper\<close> by linarith ;;
-        $upper get_feeGrowth0,
-        $upper get_feeGrowth1
+       ($upper get_feeGrowth0,
+        $upper get_feeGrowth1)
     \<medium_right_bracket> \<medium_left_bracket>
         have [simp]: \<open>(upper \<le> current)\<close> using \<open>\<not> (current < upper)\<close> by linarith ;;
-        $global_fee0 - ($upper get_feeGrowth0),
-        $global_fee1 - ($upper get_feeGrowth1)
+       ($global_fee0 - ($upper get_feeGrowth0),
+        $global_fee1 - ($upper get_feeGrowth1))
     \<medium_right_bracket> \<rightarrow> val fee0_above, fee1_above
       
-    \<open>$global_fee0 - $fee0_below - $fee0_above\<close>,
-    \<open>$global_fee1 - $fee1_below - $fee1_above\<close>
+   (\<open>$global_fee0 - $fee0_below - $fee0_above\<close>,
+    \<open>$global_fee1 - $fee1_below - $fee1_above\<close>)
   \<medium_right_bracket>.
 
 (*\<heavy_comma>

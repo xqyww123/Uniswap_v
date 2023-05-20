@@ -55,7 +55,7 @@ lemma [\<phi>reason 1000]: \<open> Is_Literal fee\<close> unfolding Is_Literal_d
 proc (nodef) fee[\<phi>synthesis 1100]:
   input \<open>Void\<close>
   output \<open>fee_rate \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
-  \<medium_left_bracket> op_const_areal[where x=fee_rate] \<medium_right_bracket>.
+  \<medium_left_bracket> apply_rule op_const_areal[where x=fee_rate] \<medium_right_bracket>.
 
 
 locale Pool = Tickmap_spec + Tick_spec +
@@ -364,7 +364,7 @@ proc swap:
 
         if $initialized \<medium_left_bracket>
 
-          tick_cross[where \<Delta>=\<Delta>growth] (
+          apply_rule tick_cross[where \<Delta>=\<Delta>growth] (
 
             $tick_next,
 
@@ -386,7 +386,7 @@ proc swap:
 
               \<open>\<v>\<a>\<r>[liquidity]\<close> is \<open>L real_next_tick\<close>
 
-              shift_current_tick_\<Delta>[where j=\<open>real_next_tick\<close> and \<Delta>=\<Delta>growth]
+              apply_rule shift_current_tick_\<Delta>[where j=\<open>real_next_tick\<close> and \<Delta>=\<Delta>growth]
         \<medium_right_bracket>
 
         sel (
@@ -412,7 +412,7 @@ proc swap:
 
         \<open>\<v>\<a>\<r>[liquidity]\<close> is \<open>L (tick_of_price next_price)\<close>  ;;
 
-        shift_current_tick_\<Delta>[where j=\<open>tick_of_price next_price\<close> and \<Delta>=\<Delta>growth]
+        apply_rule shift_current_tick_\<Delta>[where j=\<open>tick_of_price next_price\<close> and \<Delta>=\<Delta>growth]
         
       \<medium_right_bracket>
 
@@ -475,8 +475,8 @@ proc swap:
                 (insert fee_proto_def proto_fee' proto_fee'_LE0, fastforce)[1]) ;;
 
   if \<open>$zeroForOne = $exactInput\<close>
-    \<medium_left_bracket> \<open>$amount_specified - $amount_remaining\<close>, $amount_calculated \<medium_right_bracket>
-    \<medium_left_bracket> $amount_calculated, \<open>$amount_specified - $amount_remaining\<close> \<medium_right_bracket> \<rightarrow> val amount0, amount1
+    \<medium_left_bracket> (\<open>$amount_specified - $amount_remaining\<close>, $amount_calculated) \<medium_right_bracket>
+    \<medium_left_bracket> ($amount_calculated, \<open>$amount_specified - $amount_remaining\<close>) \<medium_right_bracket> \<rightarrow> val amount0, amount1
   
   $amount0 is \<open>if zeroForOne then fst (reserve_change' L price' price) / (1 - fee_rate)
                              else - fst (reserve_change' L price price')\<close>

@@ -161,12 +161,12 @@ lemma [\<phi>reason 1000]: \<open>Is_Literal MAX_TICK\<close> unfolding Is_Liter
 proc (nodef) MIN_TICK[\<phi>synthesis 1100]:
   input \<open>Void\<close>
   output \<open>MIN_TICK \<Ztypecolon> \<v>\<a>\<l> \<int>\<close>
-  \<medium_left_bracket> op_const_aint[where x=MIN_TICK] \<medium_right_bracket>.
+  \<medium_left_bracket> apply_rule op_const_aint[where x=MIN_TICK] \<medium_right_bracket>.
 
 proc (nodef) MAX_TICK[\<phi>synthesis 1100]:
   input \<open>Void\<close>
   output \<open>MAX_TICK \<Ztypecolon> \<v>\<a>\<l> \<int>\<close>
-  \<medium_left_bracket> op_const_aint[where x=MAX_TICK] \<medium_right_bracket>.
+  \<medium_left_bracket> apply_rule op_const_aint[where x=MAX_TICK] \<medium_right_bracket>.
 
 
 
