@@ -203,7 +203,7 @@ proc swap:
 \<close>
   is [routine]
   (* is [noDelegateCall]  Currently no modifier is supported, but is planned *)
-  \<medium_left_bracket> D ;;
+  \<medium_left_bracket> destruct ;;
     require (\<open>$amount_specified \<noteq> 0\<close>) ;;
     require (get_pool_unlock) ;;
     require (
