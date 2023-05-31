@@ -2,8 +2,6 @@ theory Uniswap_SwapMath
   imports Uniswap_SqrtPriceMath Uniswap_Tick_Math Uniswap_Tick
 begin
 
-declare [[\<phi>trace_processing]]
-
 definition reserve_change_in_a_step :: \<open>real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real \<times> real\<close>
   where \<open>reserve_change_in_a_step L price0 price1
     = (L / price0 - L / price1 \<comment> \<open>reserve change in token0\<close>,
@@ -927,7 +925,7 @@ proc computeSwapStep:
     note max_def[\<phi>sledgehammer_simps] min_def[\<phi>sledgehammer_simps] ;;
 
     var next_price, feeAmount ;;
-    \<open>0 \<Ztypecolon> \<real>\<close> \<open>0 \<Ztypecolon> \<real>\<close> \<rightarrow> var amountIn, amountOut (*TODO: support converge-of-branch between initialized and uninitialized variables*)
+    (\<open>0 \<Ztypecolon> \<real>\<close>, \<open>0 \<Ztypecolon> \<real>\<close>) \<rightarrow> var amountIn, amountOut (*TODO: support converge-of-branch between initialized and uninitialized variables*)
     \<open>$price \<ge> $price_target\<close> \<rightarrow> val zeroForOne ;;
     \<open>$amount_remain \<ge> 0\<close> \<rightarrow> val exactIn
 

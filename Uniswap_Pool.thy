@@ -57,7 +57,6 @@ proc (nodef) fee[\<phi>synthesis 1100]:
   output \<open>fee_rate \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   \<medium_left_bracket> apply_rule op_const_areal[where x=fee_rate] \<medium_right_bracket>.
 
-
 locale Pool = Tickmap_spec + Tick_spec +
   fixes Pool :: \<open>(fiction, pool) \<phi>\<close>
     and op_get_pool_price :: \<open>VAL proc\<close>
@@ -231,7 +230,7 @@ proc swap:
     \<open>0 \<Ztypecolon> \<real>\<close> \<rightarrow> var amount_calculated
     get_pool_price \<rightarrow> var price
     get_pool_tick \<rightarrow> var tick
-    sel (\<open>growth.fee0 (pool.growth _)\<close> \<open>growth.fee1 (pool.growth _)\<close> $zeroForOne)
+    sel (\<open>growth.fee0 (pool.growth _)\<close>, \<open>growth.fee1 (pool.growth _)\<close>, $zeroForOne)
       is \<open>I_fee_growth_global growth\<close> \<rightarrow> var fee_growth_global
     \<open>0 \<Ztypecolon> \<real>\<close> \<rightarrow> var protocolFee
     $liquidityStart \<rightarrow> var liquidity ;;
@@ -502,6 +501,6 @@ proc swap:
 
 \<medium_right_bracket>.
 
-end 
+end
 
 end

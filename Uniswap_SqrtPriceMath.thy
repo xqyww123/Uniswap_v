@@ -12,8 +12,8 @@ proc getAmount0Delta':
   output \<open>\<bar>liq / rA - liq / rB\<bar> \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   is [routine]
   \<medium_left_bracket> 
-    $rA $rB \<rightarrow> var rA, rB ;;
-    if \<open>$rA > $rB\<close> \<medium_left_bracket> $rB $rA \<rightarrow> rA, rB \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> ;; 
+    ($rA, $rB) \<rightarrow> var rA, rB ;;
+    if \<open>$rA > $rB\<close> \<medium_left_bracket> ($rB, $rA) \<rightarrow> rA, rB \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> ;; 
 
     $liq \<rightarrow> val numerator1 ;;
     \<open>$rB - $rA\<close> \<rightarrow> val numerator2 ;;
@@ -43,8 +43,8 @@ proc getAmount1Delta':
   output \<open>\<bar>liq * (rB - rA)\<bar> \<Ztypecolon> \<v>\<a>\<l> \<real>\<close>
   is [routine]
   \<medium_left_bracket> 
-    $rA $rB \<rightarrow> var rA, rB ;;
-    if \<open>$rA > $rB\<close> \<medium_left_bracket> $rB $rA \<rightarrow> rA, rB \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> ;; 
+    ($rA, $rB) \<rightarrow> var rA, rB ;;
+    if \<open>$rA > $rB\<close> \<medium_left_bracket> ($rB, $rA) \<rightarrow> rA, rB \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> ;; 
 
     \<open>$liq * ($rB - $rA)\<close>
   \<medium_right_bracket>.
@@ -68,7 +68,7 @@ proc getAmount0Delta'_rounded:
                       else nat \<lfloor> \<bar>real liq / rA - real liq / rB\<bar> \<rfloor>) \<Ztypecolon> \<v>\<a>\<l> \<nat>\<close>
   is [routine]
 \<medium_left_bracket>
-  $rA $rB \<rightarrow> var rA, rB ;;
+  ($rA, $rB) \<rightarrow> var rA, rB ;;
   if ($rA > $rB) \<medium_left_bracket> ($rB, $rA) \<rightarrow> rA, rB \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> ;; 
 
   $liq to_real \<rightarrow> val numerator1 ;;
@@ -90,8 +90,8 @@ proc getAmount0Delta_rounded:
                       else \<lceil> real_of_int liq / rA - real_of_int liq / rB \<rceil>) \<Ztypecolon> \<v>\<a>\<l> \<int>\<close>
   is [routine]
   \<medium_left_bracket> if \<open>$liq < 0\<close>
-    \<medium_left_bracket> $rA $rB \<open>-$liq\<close> \<open>False\<close> getAmount0Delta'_rounded \<medium_right_bracket>
-    \<medium_left_bracket> $rA $rB $liq \<open>True\<close> getAmount0Delta'_rounded \<medium_right_bracket>
+    \<medium_left_bracket> getAmount0Delta'_rounded ($rA, $rB, \<open>-$liq\<close>, \<open>False\<close>)  \<medium_right_bracket>
+    \<medium_left_bracket> getAmount0Delta'_rounded ($rA, $rB, $liq, \<open>True\<close>) \<medium_right_bracket>
   \<medium_right_bracket>.
 
 proc getNextSqrtPriceFromAmount0:
