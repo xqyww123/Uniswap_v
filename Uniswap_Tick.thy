@@ -339,7 +339,7 @@ proc getFeeGrowthInside:
 
     obtain \<delta>_lower \<delta>_upper where \<delta>_lower[simp]: \<open>\<delta> lower = Some \<delta>_lower\<close>
                             and \<delta>_upper[simp]: \<open>\<delta> upper = Some \<delta>_upper\<close>
-      by (metis Invt_Ticks_initialization not_None_eq not_less_iff_gr_or_eq the_\<phi>(12) the_\<phi>(13) the_\<phi>lemmata(7))
+      by (metis Invt_Ticks_initialization not_None_eq not_less_iff_gr_or_eq the_\<phi>(11) the_\<phi>(12) the_\<phi>lemmata(7))
 
     note lower_simps[simp] =
           \<open>Invt_Ticks current Lg liq growth \<delta> ticks\<close>[unfolded Invt_Ticks_def Invt_A_Tick_def
@@ -413,7 +413,7 @@ proc tick_cross:
 \<medium_right_bracket> certified proof -
 
  have x1: \<open>i \<le> j \<Longrightarrow> \<forall>k \<in> {MIN_TICK-1..<i}. \<Delta> k = 0\<close>
-    using the_\<phi>(15) by force
+   using the_\<phi>(14) by force
   then have \<open>i \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK-1..<i} = 0\<close>
     using sum.neutral by blast  
   then have x2: \<open>i \<le> j \<Longrightarrow> sum \<Delta> {i..MAX_TICK} = gSum \<Delta>\<close>
@@ -421,20 +421,20 @@ proc tick_cross:
   have x3: \<open>i \<le> j \<Longrightarrow> i' \<le> i \<Longrightarrow> sum \<Delta> {MIN_TICK - 1..<i'} = 0\<close> for i'
     by (simp add: x1)
   have x1': \<open>i \<le> j \<Longrightarrow> \<forall>k \<in> {j<..MAX_TICK}. \<Delta> k = 0\<close>
-    using the_\<phi>(15) by force
+    using the_\<phi>(14) by force
   have x4: \<open>i \<le> j \<Longrightarrow> j < i' \<Longrightarrow> sum \<Delta> {i'..MAX_TICK} = 0\<close> for i'
-    by (simp add: the_\<phi>(15))
+    by (simp add: the_\<phi>(14))
 
   have y1: \<open>\<not> i \<le> j \<Longrightarrow> \<forall>k \<in> {i..MAX_TICK}. \<Delta> k = 0\<close>
-    by (meson atLeastAtMost_iff the_\<phi>(15))
+    by (meson atLeastAtMost_iff the_\<phi>(14))
   then have y2: \<open>\<not> i \<le> j \<Longrightarrow> sum \<Delta> {i..MAX_TICK} = 0\<close>
     using sum.neutral by blast  
   then have y3: \<open>\<not> i \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK-1..<i} = gSum \<Delta>\<close>
     by (smt (verit, ccfv_threshold) diff_zero sum_sub_2 the_\<phi>lemmata(1) the_\<phi>lemmata(2))
   have y4: \<open>\<not> i \<le> j \<Longrightarrow> i' \<le> j \<Longrightarrow> sum \<Delta> {MIN_TICK - 1..<i'} = 0\<close> for i'
-    using the_\<phi>(15) by auto
+    using the_\<phi>(14) by auto
   have y5: \<open>\<not> i \<le> j \<Longrightarrow> i < i' \<Longrightarrow> sum \<Delta> {i'..MAX_TICK} = 0\<close> for i'
-    using the_\<phi>(15) by auto
+    using the_\<phi>(14) by auto
 
   have a1: \<open>\<delta> i = Some (a, b) \<Longrightarrow> tick_info.initialized (ticks i)\<close> for a b i
     using the_\<phi>lemmata(3) by blast
@@ -449,8 +449,8 @@ proc tick_cross:
 
   show ?thesis
     apply (auto simp add: \<phi> plus_fun)
-    apply (metis Tick_i the_\<phi>(10) tick_info.sel(2))
-    apply (metis Tick_i the_\<phi>(10) tick_info.sel(3))
+    apply (metis Tick_i the_\<phi>(9) tick_info.sel(2))
+    apply (metis Tick_i the_\<phi>(9) tick_info.sel(3))
     apply (insert a2[of i], cases \<open>\<delta> i\<close>; clarsimp simp add: growth_outside_def x2)
     using t1 the_\<phi>(13) the_\<phi>lemmata(1) the_\<phi>lemmata(2) apply fastforce
     using the_\<phi>lemmata(3) apply fastforce
@@ -462,10 +462,10 @@ proc tick_cross:
       by (cases \<open>\<delta> i'\<close>; clarsimp simp add: growth_outside_def x4)
     using the_\<phi>lemmata(1) apply fastforce
     using the_\<phi>lemmata(2) apply force
-    apply (simp add: add_order_0_class.add_nonneg_nonneg the_\<phi>(14) the_\<phi>lemmata(10))
-    apply (metis Tick_i the_\<phi>(10) tick_info.sel(3))
-    apply (metis Tick_i the_\<phi>(10) tick_info.sel(2))
-    apply (metis Tick_i the_\<phi>(10) tick_info.sel(3))
+    apply (simp add: add_order_0_class.add_nonneg_nonneg the_\<phi>(13) the_\<phi>lemmata(10))
+    apply (metis Tick_i the_\<phi>(9) tick_info.sel(3))
+    apply (metis Tick_i the_\<phi>(9) tick_info.sel(2))
+    apply (metis Tick_i the_\<phi>(9) tick_info.sel(3))
     apply (insert a2[of i], cases \<open>\<delta> i\<close>; clarsimp simp add: growth_outside_def x2 y3)
     using t1 the_\<phi>(13) the_\<phi>lemmata(1) the_\<phi>lemmata(2) apply fastforce
     using the_\<phi>lemmata(3) apply fastforce
@@ -473,11 +473,11 @@ proc tick_cross:
     subgoal for i' apply (insert a2[of i'], cases \<open>i' \<le> j\<close>)
        apply (cases \<open>\<delta> i'\<close>; clarsimp simp add: growth_outside_def y4)
       apply (cases \<open>i' \<le> i\<close>)
-      using the_\<phi>(16) the_\<phi>lemmata(6) apply force
+      using the_\<phi>(15) the_\<phi>lemmata(6) apply force
       by (cases \<open>\<delta> i'\<close>; clarsimp simp add: growth_outside_def y5)
     using the_\<phi>lemmata(1) apply force
-    apply (simp add: add_order_0_class.add_nonneg_nonneg the_\<phi>(14) the_\<phi>lemmata(10))
-    by (metis Tick_i the_\<phi>(10) tick_info.sel(3))
+    apply (simp add: add_order_0_class.add_nonneg_nonneg the_\<phi>(13) the_\<phi>lemmata(10))
+    by (metis Tick_i the_\<phi>(9) tick_info.sel(3))
 qed .
 
 end

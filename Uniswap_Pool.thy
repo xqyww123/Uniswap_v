@@ -48,7 +48,7 @@ lemma map_protocal_fees[simp]:
 
 setup \<open>Sign.parent_path\<close>
 
-  
+declare [[\<phi>trace_reasoning = 0]]
 
 lemma [\<phi>reason 1000]: \<open> Is_Literal fee\<close> unfolding Is_Literal_def ..
 
@@ -276,8 +276,8 @@ proc swap:
             and tick_next_dom: \<open>MIN_TICK \<le> tick_next\<close> \<open>tick_next \<le> MAX_TICK\<close>
       
       have y0: \<open>if j < tick_next' then next_initialized Lg j tick_next' else next_initialized Lg (tick_next') (j+1)\<close>
-        by (auto, metis greaterThanLessThan_iff not_less_iff_gr_or_eq order_less_le_trans the_\<phi>(15) the_\<phi>lemmata(4),
-                  metis dual_order.strict_trans1 greaterThanAtMost_iff order_less_le the_\<phi>(15) the_\<phi>lemmata(4)) ;;
+        by (auto, metis greaterThanLessThan_iff not_less_iff_gr_or_eq order_less_le_trans the_\<phi>(11) the_\<phi>lemmata(4),
+                  metis dual_order.strict_trans1 greaterThanAtMost_iff order_less_le the_\<phi>(11) the_\<phi>lemmata(4)) ;;
 
       pure_fact \<open>if j < tick_next then next_initialized Lg j tick_next else next_initialized Lg tick_next (j+1)\<close>
             and x1: \<open>zeroForOne \<Longrightarrow> tick_next \<le> j\<close>
@@ -288,12 +288,12 @@ proc swap:
       have t7: \<open>\<And>k. zeroForOne \<Longrightarrow> tick_next \<le> k \<Longrightarrow> k \<le> j \<Longrightarrow> L k = L j\<close>
         subgoal premises Ps for k
           using t8 Ps(2) apply (induct rule: int_le_induct[where k=j and i=k, OF Ps(3)]; simp)
-          by (metis Ps(1) the_\<phi>(14)) .
+          by (metis Ps(1) the_\<phi>(10)) .
 
       have t11: \<open>\<And>k. \<not> zeroForOne \<Longrightarrow> k < tick_next \<Longrightarrow> j \<le> k \<Longrightarrow> L k = L j\<close>
         subgoal premises Ps for k
           using t8' Ps(2) apply (induct rule: int_ge_induct[where k=j and i=\<open>k\<close>, OF Ps(3)]; simp)
-          using Ps(1) the_\<phi>(14) by fastforce . ;;
+          using Ps(1) the_\<phi>(10) by fastforce . ;;
 
       getSqrtRatioAtTick ($tick_next) \<rightarrow> val step_price_next
 
@@ -452,7 +452,8 @@ proc swap:
 
     set_pool_fee_growth_0 ($fee_growth_global)
     is \<open>pool _ _ _ _ (gSum (growth + fee_growth zeroForOne fee_rate' L price price')) _ _\<close>
-    certified by (auto simp add: prod_eq_iff growth.map_fee0_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>(15)) (metis fee_growth_is_0_when_zeroForOne growth.fee1_def the_\<phi>(1) the_\<phi>(15) the_\<phi>(18)) ;;
+  certified by (auto simp add: prod_eq_iff growth.map_fee0_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>,
+                metis fee_growth_is_0_when_zeroForOne growth.fee1_def the_\<phi>(12,17,20)) ;;
 
     if \<open>$protocolFee > 0\<close> \<medium_left_bracket> set_pool_protocal_fee_0 (\<open>fst (pool.protocol_fees _) + $protocolFee\<close>) \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket>
 
@@ -460,7 +461,8 @@ proc swap:
 
     set_pool_fee_growth_1 ($fee_growth_global)
     is \<open>pool price' i' False (L i') (gSum (growth + fee_growth zeroForOne fee_rate' L price price')) fee_protocol protocol_fees\<close>
-      certified by (auto simp add: prod_eq_iff growth.map_fee1_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>(15)) (metis \<open>0 < price\<close> fee_growth_is_0_when_not_zeroForOne growth.fee0_def the_\<phi>(15) the_\<phi>(18))  ;;
+  certified by (auto simp add: prod_eq_iff growth.map_fee1_def I_fee_growth_global_def growth.fee0_def growth.fee1_def the_\<phi>,
+                metis \<open>0 < price\<close> fee_growth_is_0_when_not_zeroForOne growth.fee0_def the_\<phi>(12,17,20))  ;;
 
     if \<open>$protocolFee > 0\<close> \<medium_left_bracket> set_pool_protocal_fee_1 (\<open>snd (pool.protocol_fees _) + $protocolFee\<close>) \<medium_right_bracket> \<medium_left_bracket> \<medium_right_bracket> ;;
 
